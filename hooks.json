@@ -7,6 +7,18 @@
         "timeout": 10
       }
     ],
+    "PreToolUse": [
+      {
+        "matcher": "call_mcp_tool|mcp_nowledge-mem_.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 hooks/nmem-gate.py || python hooks/nmem-gate.py || echo {\\\"decision\\\":\\\"ask\\\"}",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "type": "command",

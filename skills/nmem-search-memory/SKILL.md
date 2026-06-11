@@ -24,13 +24,14 @@ Search when:
 - domain-specific conventions the user has established before
 - the current result is ambiguous and past context would make the answer sharper
 
-## Retrieval Routing
+## Retrieval Routing & Graph Neighborhoods
 
 If MCP tools are available, prefer:
 
 1. `memory_search` for durable knowledge.
-2. `thread_search` for prior discussions, previous sessions, or exact conversation history.
-3. `thread_fetch_messages` for progressive inspection of a matching thread.
+2. If a relevant memory match is found, call `memory_neighbors` or `explore_graph` to retrieve adjacent constraints, dependencies, or decisions, providing a richer, contiguous context map.
+3. `thread_search` for prior discussions, previous sessions, or exact conversation history.
+4. `thread_fetch_messages` for progressive inspection of a matching thread.
 
 Otherwise:
 

@@ -15,11 +15,14 @@ Save proactively when the conversation produces a durable fact, preference, deci
 - durable preferences or constraints
 - plans that future sessions will need to resume cleanly
 
-## Add vs Update
+## Workflow
 
-- Use MCP `memory_add` when the insight is genuinely new and MCP tools are available. Otherwise use `nmem --json m add`.
-- If an existing memory already captures the same decision, workflow, or preference and the new information refines it, use MCP `memory_update` when available. Otherwise use `nmem m update <id> ...` instead of creating a duplicate.
+1. Scan the conversation history to identify candidates for distilled memories (facts, decisions, learnings, preferences, or repeatable procedures).
+2. Draft a standalone memory card for each candidate with a clear title and context-complete description.
+3. Present these draft memory cards to the user, categorized by unit type (`decision`, `learning`, `preference`, etc.), and ask for approval or edits.
+4. For approved items, verify if a duplicate or similar memory exists:
+   - If yes: update the existing memory (using MCP `memory_update` or CLI `nmem m update`).
+   - If no: add it as a new memory (using MCP `memory_add` or CLI `nmem --json m add`).
+5. Identify semantic relationships between the new memories and existing knowledge (e.g., a new decision superseding an older plan). Present the relationship edges to the user and, on approval, link them (using MCP `memory_relation_add` or CLI commands).
 
-Prefer atomic, standalone memories with strong titles and structured meaning. Focus on what was learned or decided, not routine chatter.
-
-When saving directly, pass `unit_type` when you know it: `fact`, `preference`, `decision`, `plan`, `procedure`, `learning`, `context`, or `event`.
+Always seek explicit confirmation before creating or updating memories. Do not perform write operations silently.

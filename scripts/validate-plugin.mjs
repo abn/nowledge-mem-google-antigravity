@@ -64,6 +64,7 @@ async function main() {
     'rules/nowledge-mem.md',
     'hooks/session-start.py',
     'hooks/session-end.py',
+    'hooks/nmem-gate.py',
     'skills/nmem-read-working-memory/SKILL.md',
     'skills/nmem-search-memory/SKILL.md',
     'skills/nmem-distill-memory/SKILL.md',

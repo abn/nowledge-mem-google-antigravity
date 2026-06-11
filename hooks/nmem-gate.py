@@ -1,0 +1,103 @@
+#!/usr/bin/env python3
+import sys
+import json
+import os
+import re
+
+def read_hook_input():
+    try:
+        content = sys.stdin.read().strip()
+        return json.loads(content) if content else {}
+    except Exception:
+        return {}
+
+def emit(payload):
+    sys.stdout.write(json.dumps(payload))
+    sys.stdout.flush()
+
+def main():
+    data = read_hook_input()
+    tool_call = data.get("toolCall", {})
+    tool_name = tool_call.get("name")
+    tool_args = tool_call.get("args", {})
+
+    # Detect if calling nowledge-mem
+    is_nmem = False
+    sub_tool = ""
+    if tool_name == "call_mcp_tool" and tool_args.get("ServerName") == "nowledge-mem":
+        is_nmem = True
+        sub_tool = tool_args.get("ToolName")
+    elif tool_name.startswith("mcp_nowledge-mem_"):
+        is_nmem = True
+        sub_tool = tool_name[len("mcp_nowledge-mem_"):]
+
+    if not is_nmem:
+        emit({"decision": "allow"})
+        return
+
+    # 1. Read-only tools (auto-allow)
+    read_only = {
+        "memory_search", "thread_search", "read_context_bundle", 
+        "read_working_memory", "list_memory_labels", "thread_fetch_messages",
+        "search_thread_messages", "list_crystals", "graph_stats", 
+        "list_communities", "get_community_details", "get_wiki_page",
+        "explore_graph", "query_sources", "query_library", "read_source_content", 
+        "read_artifact_content", "search_source_chunks", "search_artifact_chunks", 
+        "analyze_source_data", "analyze_artifact_data", "mem_fs"
+    }
+    if sub_tool in read_only:
+        emit({
+            "decision": "allow",
+            "reason": f"Auto-allowing read-only tool {sub_tool}",
+            "permissionOverrides": [f"mcp(nowledge-mem/{sub_tool})"]
+        })
+        return
+
+    # 2. Destructive operations (hard confirmation)
+    if sub_tool in {"memory_delete", "thread_delete", "memory_relation_delete"}:
+        emit({
+            "decision": "force_ask",
+            "reason": f"Confirmation required to delete knowledge graph data ({sub_tool})"
+        })
+        return
+
+    # 3. Writes/Mutations (intent-based)
+    if sub_tool in {"memory_add", "memory_update", "memory_relation_add", "memory_supersede"}:
+        transcript_path = data.get("transcriptPath")
+        if transcript_path and os.path.exists(transcript_path):
+            try:
+                user_authorized = False
+                with open(transcript_path, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line:
+                            continue
+                        step = json.loads(line)
+                        if step.get("source") == "USER_EXPLICIT":
+                            content = step.get("content", "")
+                            # Look for keywords signifying explicit memory commands
+                            if re.search(r'\b(save|remember|memorize|store|nmem|add to memory|distill|checkpoint|handoff)\b', content, re.IGNORECASE):
+                                user_authorized = True
+                                break
+                if user_authorized:
+                    emit({
+                        "decision": "allow",
+                        "reason": f"Explicit user intent detected for {sub_tool} in recent conversation.",
+                        "permissionOverrides": [f"mcp(nowledge-mem/{sub_tool})"]
+                    })
+                    return
+            except Exception:
+                pass
+        
+        # Fallback to ask if no recent intent is found
+        emit({
+            "decision": "ask",
+            "reason": f"Save memory checkpoint request: {sub_tool}"
+        })
+        return
+
+    # Default fallback
+    emit({"decision": "ask"})
+
+if __name__ == "__main__":
+    main()
