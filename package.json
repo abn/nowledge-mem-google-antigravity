@@ -1,0 +1,27 @@
+{
+  "name": "nowledge-mem-google-antigravity",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Google Antigravity plugin for Nowledge Mem",
+  "license": "MIT",
+  "homepage": "https://mem.nowledge.co/docs/integrations/google-antigravity",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "validate": "node scripts/validate-plugin.mjs",
+    "package:release": "node scripts/package-plugin.mjs",
+    "verify:release": "npm run validate && npm run package:release"
+  },
+  "keywords": [
+    "google-antigravity",
+    "nowledge-mem",
+    "memory",
+    "knowledge-base",
+    "agent-skills"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nowledge-co/nowledge-mem-google-antigravity.git"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "nowledge-mem-hooks": {
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "python3 hooks/session-start.py || python hooks/session-start.py || echo {}",
+        "timeout": 10
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "python3 hooks/session-end.py || python hooks/session-end.py || echo {}",
+        "timeout": 20
+      }
+    ]
+  }
+}
