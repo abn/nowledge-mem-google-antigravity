@@ -140,7 +140,7 @@ nmem m update <id> -t "Updated title"
 
 ## Save Thread
 
-The Stop hook automatically imports the current conversation thread when execution terminates. To run an explicit save or check of the thread, use the `save-thread` skill.
+The Stop hook automatically imports the current conversation thread when execution terminates. To run an explicit save or check of the thread, use the `nmem-save-thread` skill.
 
 ## Save Handoff
 

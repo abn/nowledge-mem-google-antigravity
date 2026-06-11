@@ -1,5 +1,5 @@
 ---
-name: save-handoff
+name: nmem-save-handoff
 description: Save a concise Google Antigravity handoff summary only when the user explicitly asks. This is intentionally separate from full thread-save, which should use the native session importer script.
 ---
 
@@ -9,7 +9,7 @@ Only use this skill when the user explicitly asks to save progress as a handoff,
 
 ## Why This Is A Handoff
 
-`save-thread` should mean saving the real session messages through the custom session importer script.
+`nmem-save-thread` should mean saving the real session messages through the custom session importer script.
 
 This skill intentionally creates a structured handoff summary thread instead of importing the full session.
 
@@ -18,7 +18,7 @@ This skill intentionally creates a structured handoff summary thread instead of 
 1. Write a short but useful handoff summary.
 2. Include Goal, Decisions, Files, Risks, and Next.
 3. Create a thread with `nmem t create` and `-s google-antigravity`.
-4. If the user wants the full session instead, use `save-thread`.
+4. If the user wants the full session instead, use `nmem-save-thread`.
 
 Example:
 

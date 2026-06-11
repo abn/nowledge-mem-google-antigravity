@@ -31,11 +31,11 @@ const requiredArchiveEntries = new Set([
   './rules/nowledge-mem.md',
   './hooks/session-start.py',
   './hooks/session-end.py',
-  './skills/read-working-memory/SKILL.md',
-  './skills/search-memory/SKILL.md',
-  './skills/distill-memory/SKILL.md',
-  './skills/save-thread/SKILL.md',
-  './skills/save-handoff/SKILL.md'
+  './skills/nmem-read-working-memory/SKILL.md',
+  './skills/nmem-search-memory/SKILL.md',
+  './skills/nmem-distill-memory/SKILL.md',
+  './skills/nmem-save-thread/SKILL.md',
+  './skills/nmem-save-handoff/SKILL.md'
 ]);
 
 function run(command, args, cwd = pluginRoot, options = {}) {

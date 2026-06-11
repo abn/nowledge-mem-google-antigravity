@@ -1,5 +1,5 @@
 ---
-name: save-thread
+name: nmem-save-thread
 description: Save the real Google Antigravity session to Nowledge Mem only when the user explicitly asks. This uses Antigravity's transcript-backed importer rather than a summary-only fallback.
 ---
 
@@ -9,11 +9,11 @@ Only use this skill when the user explicitly asks to save the session, persist t
 
 ## Contract
 
-`save-thread` means saving the real conversation messages.
+`nmem-save-thread` means saving the real conversation messages.
 
 Use the plugin's `hooks/session-end.py` script for that path, which parses the `transcript.jsonl` file and imports it using `nmem t import`.
 
-Use `save-handoff` instead only when the user wants a lightweight resumable summary rather than the full session.
+Use `nmem-save-handoff` instead only when the user wants a lightweight resumable summary rather than the full session.
 
 ## Workflow
 

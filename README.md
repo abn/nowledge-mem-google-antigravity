@@ -79,11 +79,11 @@ Release packaging notes live in [`RELEASING.md`](./RELEASING.md).
 
 **Agent skills**
 
-- `read-working-memory`
-- `search-memory`
-- `distill-memory`
-- `save-thread`
-- `save-handoff`
+- `nmem-read-working-memory`
+- `nmem-search-memory`
+- `nmem-distill-memory`
+- `nmem-save-thread`
+- `nmem-save-handoff`
 
 ## Local vs Remote
 
@@ -131,10 +131,10 @@ nmem status
 
 Antigravity supports two separate save paths:
 
-- **Thread Save** (`save-thread` skill): Imports the **real session messages** into Nowledge Mem. The Stop hook performs this import automatically at the end of the session, but the skill is available for manual mid-session triggers.
-- **Handoff Save** (`save-handoff` skill): Creates a **compact resumable handoff summary** with Goal, Decisions, Files, Risks, and Next. Use this when you want a lightweight restart point rather than the full transcript.
+- **Thread Save** (`nmem-save-thread` skill): Imports the **real session messages** into Nowledge Mem. The Stop hook performs this import automatically at the end of the session, but the skill is available for manual mid-session triggers.
+- **Handoff Save** (`nmem-save-handoff` skill): Creates a **compact resumable handoff summary** with Goal, Decisions, Files, Risks, and Next. Use this when you want a lightweight restart point rather than the full transcript.
 
-Use `distill-memory` for durable atomic knowledge, `save-thread` for the full session, and `save-handoff` for a resumable handoff.
+Use `nmem-distill-memory` for durable atomic knowledge, `nmem-save-thread` for the full session, and `nmem-save-handoff` for a resumable handoff.
 
 ## Links
 

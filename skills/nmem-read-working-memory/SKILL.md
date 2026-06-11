@@ -1,5 +1,5 @@
 ---
-name: read-working-memory
+name: nmem-read-working-memory
 description: Read the user's daily Working Memory briefing at session start or when recent priorities matter. This gives Google Antigravity cross-tool continuity without bloating the main prompt.
 ---
 

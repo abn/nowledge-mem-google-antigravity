@@ -1,5 +1,5 @@
 ---
-name: search-memory
+name: nmem-search-memory
 description: Search the user's personal knowledge base when past insights would improve the response. Trigger proactively for continuity, recurring bugs, design rationale, and remembered workflows.
 ---
 
