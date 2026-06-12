@@ -70,6 +70,7 @@ async function main() {
     'skills/nmem-distill-memory/SKILL.md',
     'skills/nmem-save-thread/SKILL.md',
     'skills/nmem-save-handoff/SKILL.md',
+    'skills/nmem-fs-explorer/SKILL.md',
     'scripts/validate-plugin.mjs',
     'scripts/package-plugin.mjs',
     `release-notes/${manifest.version}.md`

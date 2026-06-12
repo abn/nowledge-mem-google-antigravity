@@ -36,7 +36,8 @@ const requiredArchiveEntries = new Set([
   './skills/nmem-search-memory/SKILL.md',
   './skills/nmem-distill-memory/SKILL.md',
   './skills/nmem-save-thread/SKILL.md',
-  './skills/nmem-save-handoff/SKILL.md'
+  './skills/nmem-save-handoff/SKILL.md',
+  './skills/nmem-fs-explorer/SKILL.md'
 ]);
 
 function run(command, args, cwd = pluginRoot, options = {}) {
