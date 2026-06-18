@@ -71,6 +71,8 @@ async function main() {
     'skills/nmem-save-thread/SKILL.md',
     'skills/nmem-save-handoff/SKILL.md',
     'skills/nmem-fs-explorer/SKILL.md',
+    'skills/nmem-manage-skills/SKILL.md',
+    'skills/nmem-manage-skills/scripts/manage_skills.py',
     'scripts/validate-plugin.mjs',
     'scripts/package-plugin.mjs',
     `release-notes/${manifest.version}.md`

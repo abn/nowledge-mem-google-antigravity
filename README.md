@@ -84,6 +84,8 @@ Release packaging notes live in [`RELEASING.md`](./RELEASING.md).
 - `nmem-distill-memory`
 - `nmem-save-thread`
 - `nmem-save-handoff`
+- `nmem-fs-explorer`
+- `nmem-manage-skills`
 
 ## Local vs Remote
 
@@ -135,6 +137,10 @@ Antigravity supports two separate save paths:
 - **Handoff Save** (`nmem-save-handoff` skill): Creates a **compact resumable handoff summary** with Goal, Decisions, Files, Risks, and Next. Use this when you want a lightweight restart point rather than the full transcript.
 
 Use `nmem-distill-memory` for durable atomic knowledge, `nmem-save-thread` for the full session, and `nmem-save-handoff` for a resumable handoff.
+
+## Workspace Skill Management
+
+- **Install/Update Skill** (`nmem-manage-skills` skill): Evaluates the project context, lists active/archived/candidate skills from Nowledge Mem, and helps recommend and install them into `<workspace-root>/.agents/skills/<skill-folder>/`. Users can choose to commit these skills to git or keep them local-only (via git-exclude).
 
 ## Links
 
