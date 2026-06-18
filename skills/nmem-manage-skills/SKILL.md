@@ -27,10 +27,17 @@ python3 skills/nmem-manage-skills/scripts/manage_skills.py suggest <workspace-ro
 ```
 This script scans for Makefiles, workflow files, Flatpak/AetherPak configurations, and Git status to score and match skills on the server.
 
-### Step 2: Prompt the User (Rich Interface)
-Do not install skills silently. Once you have suggestions or a list of available skills, use the Antigravity `ask_question` tool to present them to the user.
-* Provide multiple-choice options for the skills to install.
-* Ask the user if the skill should be **committed to the repository** (standard track) or **kept local/user-specific** (ignored via Git exclude).
+### Step 2: Prompt the User (Rich Interface & Feedback Loop Optimization)
+Do not install skills silently. Use Antigravity's rich interaction interfaces to solicit approval in a single turn:
+
+- **Option A (Interactive Prompt)**: Use the native `ask_question` tool to present a list of skills.
+  - Set `is_multi_select: true` to let the user select multiple skills at once.
+  - If a specific skill is highly recommended, list it first with `(Recommended)` prefix.
+  - Follow up with a second `ask_question` or option on whether to commit them to the repository or keep them local.
+- **Option B (Proceed Artifact)**: For larger installations, write a `skills_installation_plan.md` artifact under `<appDataDir>/brain/<conversation-id>`.
+  - Set `RequestFeedback: true` and `UserFacing: true` in the `ArtifactMetadata` to present a "Proceed" button.
+  - Present the suggested skills in a markdown Table showing the Skill ID, Description, Relevance reasons, and git commit strategy (e.g., local git exclude vs. committed).
+  - The user can click "Proceed" to approve and install the plan in one click.
 
 ### Step 3: Install/Update the Skill
 Run the install command:

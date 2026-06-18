@@ -160,6 +160,31 @@ Then store it with:
 nmem --json t create -t "Antigravity Session - topic" -c "Goal: ... Decisions: ... Files: ... Risks: ... Next: ..." -s google-antigravity
 ```
 
+## Token Optimization Guidelines
+
+To conserve the user's LLM tokens and prevent context window bloat:
+
+- **Reuse Startup Context**: Read the Context Bundle or Working Memory exactly once at the beginning of a session. Do not call retrieval tools like `read_context_bundle` or `read_working_memory` on every turn.
+- **Paging & Windowing**:
+  - When calling `thread_fetch_messages`, always specify a reasonable `limit` (e.g., `5` or `10`) instead of pulling in the entire thread history at once. Use `offset` to page through older messages only when necessary.
+  - When reading files or thread logs in `mem_fs`, use `stat` first to check file size/metadata, then use `cat` with `--line` and `--lines` to load only the specific window of content needed.
+- **Deduplication**: Always query existing memories with `memory_search` before saving a new memory. If a matching memory exists, use `memory_update` to refine it rather than creating a duplicate memory.
+
+## Rich UI/UX & Feedback Loop Optimization
+
+Always leverage Antigravity's premium UI capabilities to make the experience feel integrated, responsive, and professional:
+
+- **Proceed Approvals (Artifacts)**:
+  - For complex draft operations (such as drafting distilled memories or handoff summaries), do not ask the user for approval via raw text chat.
+  - Instead, write the draft to a structured markdown artifact (e.g., `distilled_memories_draft.md` or `handoff.md`) in the conversation's artifact directory (`<appDataDir>/brain/<conversation-id>`).
+  - Set `RequestFeedback: true` and `UserFacing: true` in the `ArtifactMetadata` so that a visual "Proceed" button is rendered.
+  - Use GitHub-style Alerts (`[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, `[!CAUTION]`) to categorize drafts and draw attention to critical actions.
+  - Use Mermaid diagrams (`mermaid` blocks) to visualize relationships between memories or graph structures.
+  - Use standard tables to cleanly present tabular structured data.
+- **Interactive Multi-Choice (ask_question)**:
+  - Use the native `ask_question` tool when the user needs to make a selection from multiple options (e.g., selecting which suggested skills to install, or checking which specific memories/relations to save).
+  - List the recommended option first and prefix it with `(Recommended)`.
+
 ## Status
 
 When setup seems broken, run:

@@ -19,10 +19,16 @@ Save proactively when the conversation produces a durable fact, preference, deci
 
 1. Scan the conversation history to identify candidates for distilled memories (facts, decisions, learnings, preferences, or repeatable procedures).
 2. Draft a standalone memory card for each candidate with a clear title and context-complete description.
-3. Present these draft memory cards to the user, categorized by unit type (`decision`, `learning`, `preference`, etc.), and ask for approval or edits.
-4. For approved items, verify if a duplicate or similar memory exists:
+3. Write the drafted memories to a user-facing artifact named `distilled_memories_draft.md` under `<appDataDir>/brain/<conversation-id>`.
+   - Set `RequestFeedback: true` and `UserFacing: true` in the `ArtifactMetadata` to present a "Proceed" button.
+   - Organize the draft using GitHub-style Alerts (`[!NOTE]`, `[!TIP]`, etc.) to categorize cards by unit type (`decision`, `learning`, `preference`, etc.), and use tables to clearly present their fields.
+   - Use the native `ask_question` tool if the user needs to select or exclude a subset of memories.
+4. Identify semantic relationships between the new memories and existing knowledge (e.g., a new decision superseding an older plan).
+   - Draw a Mermaid flowchart (`mermaid` block) inside the `distilled_memories_draft.md` artifact to visualize the relationship graph.
+   - Allow the user to review the entire package of memories and relations at once.
+5. Once the user clicks "Proceed" or approves, verify if a duplicate or similar memory exists:
    - If yes: update the existing memory (using MCP `memory_update` or CLI `nmem m update`).
    - If no: add it as a new memory (using MCP `memory_add` or CLI `nmem --json m add`).
-5. Identify semantic relationships between the new memories and existing knowledge (e.g., a new decision superseding an older plan). Present the relationship edges to the user and, on approval, link them (using MCP `memory_relation_add` or CLI commands).
+   - Create the relationship edges (using MCP `memory_relation_add` or CLI commands).
 
 Always seek explicit confirmation before creating or updating memories. Do not perform write operations silently.
