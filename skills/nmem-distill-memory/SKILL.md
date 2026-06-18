@@ -27,8 +27,9 @@ Save proactively when the conversation produces a durable fact, preference, deci
    - Draw a Mermaid flowchart (`mermaid` block) inside the `distilled_memories_draft.md` artifact to visualize the relationship graph.
    - Allow the user to review the entire package of memories and relations at once.
 5. Once the user clicks "Proceed" or approves, verify if a duplicate or similar memory exists:
-   - If yes: update the existing memory (using MCP `memory_update` or CLI `nmem m update`).
-   - If no: add it as a new memory (using MCP `memory_add` or CLI `nmem --json m add`).
-   - Create the relationship edges (using MCP `memory_relation_add` or CLI commands).
+   - If yes: update the existing memory (preferring MCP `memory_update` or `mem_fs` write to prevent terminal permission prompts).
+   - If no: add it as a new memory (preferring MCP `memory_add` or `mem_fs` write).
+   - Create the relationship edges (preferring MCP `memory_relation_add` or `mem_fs` write).
+   - Only fall back to `nmem` CLI write commands if MCP tools are unavailable.
 
 Always seek explicit confirmation before creating or updating memories. Do not perform write operations silently.

@@ -185,6 +185,26 @@ Always leverage Antigravity's premium UI capabilities to make the experience fee
   - Use the native `ask_question` tool when the user needs to make a selection from multiple options (e.g., selecting which suggested skills to install, or checking which specific memories/relations to save).
   - List the recommended option first and prefix it with `(Recommended)`.
 
+## API, CLI, and MCP Interface Selection Guidelines
+
+To minimize user interruption (via terminal permission popups), optimize latency, and prevent context bloat, always select the best interface for the job:
+
+1. **Active Agent Loop (Prefer MCP)**:
+   - **Rule**: When executing within the conversation loop, always prefer MCP tools (like `memory_search`, `read_context_bundle`, etc.) over executing `nmem` CLI commands.
+   - **Reasoning**: Natively integrated schemas prevent token waste, and **MCP tools do not trigger terminal command permission prompts** (which break agent autonomy and interrupt the user). Only fall back to `nmem` CLI commands when MCP tools are disabled.
+2. **Unified Navigation & File Operations (Prefer Nowledge FS)**:
+   - **Rule**: For path-based browsing, metadata checking, case-insensitive grep searching, or segment reading, prefer the **Nowledge FS (`mem_fs` MCP tool)** or CLI `nmem fs`.
+   - **Reasoning**: Navigating via paths (`/memories/`, `/threads/`, `/wiki/`) is highly structured. Use the "Start broad, then narrow" pattern:
+     - Run `mem_fs` `recall` or `find` to discover paths.
+     - Run `mem_fs` `ls` to explore neighboring context.
+     - Run `mem_fs` `stat` to check metadata/line count cheaply *before* loading the content.
+     - Run `mem_fs` `cat --line N --lines M` to load only the specific window of content needed.
+3. **Hooks & Background Scripts (Prefer Direct HTTP API)**:
+   - **Rule**: In hook scripts (`session-start.py`, `session-end.py`, `nmem-gate.py`) and background helpers, make direct HTTP requests (e.g. using python's `urllib`) to the local/remote API instead of spawning `nmem` CLI subprocesses.
+   - **Reasoning**: Spawning subprocesses adds 300-500ms of startup latency, whereas native HTTP requests run in <50ms, keeping the startup/shutdown hooks extremely fast and lightweight.
+4. **Diagnostics & Troubleshooting (Prefer CLI)**:
+   - **Rule**: Use the `nmem` CLI for human workflows, debugging, and initial setup diagnostics (e.g. `nmem status` or `nmem config client set`).
+
 ## Status
 
 When setup seems broken, run:

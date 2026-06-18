@@ -26,24 +26,22 @@ Search when:
 
 ## Token-Efficient Retrieval Routing & Graph Neighborhoods
 
-To minimize token usage and avoid bloating the conversation context:
+To minimize token usage, avoid bloating the conversation context, and prevent terminal permission prompts, follow this interface hierarchy:
 
-1. **Be Precise**: Use specific keywords in search queries to find exact matches.
-2. **Paging Thread Messages**:
-   - If MCP tools are available, call `thread_search` to find relevant threads.
-   - Do NOT load full threads. When calling `thread_fetch_messages`, always specify a small limit (e.g. `limit: 5` or `10`) to check recent context first. Page further using `offset` only if needed.
-3. **Windowed File Reading**:
-   - When navigating the virtual filesystem with `mem_fs` or CLI `nmem fs`:
-     - Run `stat` to check the file size and line count before loading any file.
-     - For large thread logs (`.jsonl`) or documents, do not call `cat` on the whole path. Use `cat` with `--line <start>` and `--lines <count>` to inspect only the required window.
-4. **Graph Neighborhoods**:
-   - When a relevant memory is found, use `memory_neighbors` or `explore_graph` to selectively load adjacent nodes/relationships rather than pulling large batches of unrelated memories.
-
-If MCP tools are not available, use the CLI equivalents:
-1. Start with `nmem --json m search` for durable knowledge.
-2. Use `--mode deep` when the first pass is weak or the recall need is conceptual.
-3. Use `nmem --json t search` for prior discussions or previous sessions.
-4. If a memory result includes a `source_thread` or thread search returns a strong hit, inspect the conversation progressively with `nmem --json t show <thread_id> --limit 5 --offset 0 --content-limit 1200` to avoid dumping the entire thread.
+1. **Nowledge FS (MCP `mem_fs`) - Best for Unified File Actions**:
+   - For listing, searching, checking size, or loading chunks of memories, threads, wiki pages, or documents, call the MCP `mem_fs` tool.
+   - Use the **"Start broad, then narrow"** pattern:
+     - Run `mem_fs` with `command: "recall", path: "/memories", query: "..."` for semantic searches.
+     - Run `mem_fs` with `command: "grep", query: "..."` to search text across memories, threads, and library sources.
+     - Run `mem_fs` with `command: "stat"` to check the file size and line counts cheaply before loading.
+     - Run `mem_fs` with `command: "cat", path: "...", line: START, lines: COUNT` to fetch only the required window, avoiding context bloat.
+2. **Specialized MCP Tools**:
+   - Use `memory_search` for durable knowledge queries.
+   - Use `thread_search` followed by `thread_fetch_messages` (always passing a small `limit` like `5` or `10`) to paginatedly check thread histories.
+   - Use `memory_neighbors` or `explore_graph` to expand graph neighborhoods selectively.
+3. **CLI Fallback (Only if MCP is unavailable)**:
+   - For file actions: `nmem fs ls`, `nmem fs cat --line START --lines COUNT`, `nmem fs stat`, `nmem fs find`, `nmem fs grep`, `nmem fs recall`.
+   - For memory/thread lookups: `nmem --json m search` or `nmem --json t search` (with pagination).
 
 Prefer the smallest retrieval surface that answers the question.
 

@@ -5,21 +5,23 @@ description: Read the user's daily Working Memory briefing at session start or w
 
 # Read Working Memory
 
-Use MCP `read_context_bundle` when startup identity, agent lane, space scope, or Rules could matter. It includes Working Memory plus the full owner/AI Identity/scope/rules contract.
+Always prefer native Model Context Protocol (MCP) or Nowledge FS paths for retrieval to prevent terminal command permission prompts and keep execution silent. Only fall back to CLI commands when MCP tools are disabled.
 
-If Context Bundle is unavailable or you only need current priorities, use MCP `read_working_memory` or:
+## Preferred Retrieval Hierarchy
 
-```bash
-nmem --json wm read
-```
+1. **Context Bundle (MCP)**: Call MCP tool `read_context_bundle` to fetch startup identity, rules, and working memory.
+2. **Working Memory (MCP)**: If context bundle is not needed, call `read_working_memory`.
+3. **Nowledge FS (MCP)**: Call `mem_fs` tool with `command: "cat", path: "/working-memory/working-memory.md"` (or `context`).
+4. **CLI Fallback**: Only if MCP is unavailable, execute:
+   ```bash
+   nmem --json wm read
+   ```
+   Or context bundle fallback:
+   ```bash
+   nmem --json context --source-app google-antigravity
+   ```
 
-CLI Context Bundle fallback:
-
-```bash
-nmem --json context --source-app google-antigravity
-```
-
-If the runtime already knows the current project or agent lane, add `--space "<space name>"`. Multi-agent orchestrators can set `NMEM_AGENT_ID="<agent-slug>"` before launching. Add `NMEM_SPACE` only when that whole run should override the identity's default space. Use `NMEM_HOST_AGENT_ID` only for advanced host-id aliases.
+If the runtime already knows the current project or agent lane, add `--space "<space name>"` to the CLI commands or set `space_id` in the MCP tools. Multi-agent orchestrators can set `NMEM_AGENT_ID="<agent-slug>"` before launching. Add `NMEM_SPACE` only when that whole run should override the identity's default space. Use `NMEM_HOST_AGENT_ID` only for advanced host-id aliases.
 
 ## When to Use
 

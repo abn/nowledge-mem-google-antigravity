@@ -25,7 +25,7 @@ This skill intentionally creates a structured handoff summary thread instead of 
    - Set `RequestFeedback: true` and `UserFacing: true` in the `ArtifactMetadata` to present a "Proceed" button.
    - Format the summary using a premium layout: a markdown Table for Goals/Decisions/Files, Alerts to highlight Risks, and a checklist for Next Steps.
 3. Notify the user to review the drafted `handoff_draft.md` artifact.
-4. Upon the user clicking "Proceed" or giving approval, create the handoff thread (using MCP `thread_create` if available, or the CLI command `nmem --json t create -t "Antigravity Session - <topic>" -c "<content>" -s google-antigravity`).
+4. Upon the user clicking "Proceed" or giving approval, create the handoff thread (preferring MCP `thread_create` or `mem_fs` write to prevent terminal permission prompts, falling back to CLI `nmem --json t create -t "Antigravity Session - <topic>" -c "<content>" -s google-antigravity` only when MCP is unavailable).
 5. If the user prefers a lossless transcript backup instead of a handoff summary, route to the `nmem-save-thread` skill.
 
 Always get explicit approval before creating the handoff thread. Do not auto-save handoffs silently.
