@@ -71,49 +71,74 @@ def main():
             elif len(clean_text) > 0:
                 title = clean_text
                 
-        # Delete existing thread to allow overwrite
-        delete_args = ['t', 'delete', conversation_id]
+        # Check if the thread exists
+        check_args = ['t', 'show', conversation_id]
         if space:
-            delete_args.extend(['--space', space])
+            check_args.extend(['--space', space])
             
+        thread_exists = False
         try:
             result = subprocess.run(
-                ['nmem'] + delete_args,
+                ['nmem'] + check_args,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
                 timeout=10
             )
-            if result.returncode != 0 and (os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG')):
-                sys.stderr.write(f"nmem t delete failed: {result.stderr}\n")
+            if result.returncode == 0:
+                thread_exists = True
         except Exception as e:
             if os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG'):
-                sys.stderr.write(f"nmem t delete execution failed: {e}\n")
+                sys.stderr.write(f"nmem t show execution failed: {e}\n")
                 
-        # Import updated thread
-        import_args = [
-            't', 'import',
-            '-m', json.dumps(messages),
-            '--id', conversation_id,
-            '-t', title,
-            '-s', 'google-antigravity'
-        ]
-        if space:
-            import_args.extend(['--space', space])
-            
-        try:
-            result = subprocess.run(
-                ['nmem'] + import_args,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                timeout=20
-            )
-            if result.returncode != 0 and (os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG')):
-                sys.stderr.write(f"nmem t import failed: {result.stderr}\n")
-        except Exception as e:
-            if os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG'):
-                sys.stderr.write(f"nmem t import execution failed: {e}\n")
+        if thread_exists:
+            # Append messages to existing thread
+            append_args = ['t']
+            if space:
+                append_args.extend(['--space', space])
+            append_args.extend([
+                'append',
+                conversation_id,
+                '-m', json.dumps(messages)
+            ])
+            try:
+                result = subprocess.run(
+                    ['nmem'] + append_args,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    timeout=20
+                )
+                if result.returncode != 0 and (os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG')):
+                    sys.stderr.write(f"nmem t append failed: {result.stderr}\n")
+            except Exception as e:
+                if os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG'):
+                    sys.stderr.write(f"nmem t append execution failed: {e}\n")
+        else:
+            # Import new thread
+            import_args = [
+                't', 'import',
+                '-m', json.dumps(messages),
+                '--id', conversation_id,
+                '-t', title,
+                '-s', 'google-antigravity'
+            ]
+            if space:
+                import_args.extend(['--space', space])
+                
+            try:
+                result = subprocess.run(
+                    ['nmem'] + import_args,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    timeout=20
+                )
+                if result.returncode != 0 and (os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG')):
+                    sys.stderr.write(f"nmem t import failed: {result.stderr}\n")
+            except Exception as e:
+                if os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG'):
+                    sys.stderr.write(f"nmem t import execution failed: {e}\n")
                 
     except Exception as e:
         if os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG'):
