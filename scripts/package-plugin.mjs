@@ -39,7 +39,8 @@ const requiredArchiveEntries = new Set([
   './skills/nmem-save-handoff/SKILL.md',
   './skills/nmem-fs-explorer/SKILL.md',
   './skills/nmem-manage-skills/SKILL.md',
-  './skills/nmem-manage-skills/scripts/manage_skills.py'
+  './skills/nmem-manage-skills/scripts/manage_skills.py',
+  './skills/nmem-propose-skill/SKILL.md'
 ]);
 
 function run(command, args, cwd = pluginRoot, options = {}) {

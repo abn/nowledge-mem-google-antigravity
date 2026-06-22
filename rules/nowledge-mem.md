@@ -160,6 +160,14 @@ Then store it with:
 nmem --json t create -t "Antigravity Session - topic" -c "Goal: ... Decisions: ... Files: ... Risks: ... Next: ..." -s google-antigravity
 ```
 
+## Propose Skill
+
+When the user asks you to create, write, teach, or save a Skill, or when you see an opportunity to propose a concrete improvement to an existing skill:
+- Do NOT use `memory_add` or save it as a memory card: a skill is a reusable procedure for agents, not a memory note.
+- Draft the skill's name, purpose, and grounding evidence (or the proposed improvement changes).
+- Write the draft to `skill_draft.md` in the artifact directory, setting `RequestFeedback: true` and `UserFacing: true` to request approval via the interactive "Proceed" button.
+- Once approved, call the MCP tool `create_skill` (for a new skill) or `propose_skill_improvement` (for an improvement).
+
 ## Token Optimization Guidelines
 
 To conserve the user's LLM tokens and prevent context window bloat:
