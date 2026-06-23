@@ -87,7 +87,12 @@ Avoid raw text chat loops for drafting, confirmation, and multi-choice selection
 
 When authoring or modifying skills under `skills/`, follow these principles:
 
+* **File Location & Naming**: Each skill must be placed in its own folder under `skills/<skill-folder>/SKILL.md` (e.g. `skills/nmem-search-memory/SKILL.md`).
+* **YAML Frontmatter Trigger Matching**: Every `SKILL.md` must start with a YAML frontmatter block containing:
+  - `name`: Kebab-cased unique name matching the folder name.
+  - `description`: A clear, third-person explanation of what behavior the skill teaches and when the agent should use it. This description is parsed by Antigravity at startup to dynamically discover and load relevant skills, so it must contain relevant keywords.
 * **Primary and Fallback Interaction Paths**: Every skill that interacts with the `nmem` backend (whether reading working memory, searching, saving handoffs, or distilling memories) should define:
   1. A **Primary Interaction Mode**: Usually native MCP tools (or specialized helper scripts) to prevent terminal permission prompts and keep execution silent.
   2. A **CLI Fallback**: A documented fallback command using the `nmem` CLI to ensure the skill remains operational if MCP tools or APIs are disabled or unavailable.
 * **Preferred Execution Hierarchy**: Document these paths clearly in a "Preferred Retrieval Hierarchy" or "Preferred Execution Hierarchy" section within the skill's `SKILL.md` file.
+* **Outcome Feedback Footers**: Include the standard `<!-- nmem:skill-outcome-footer v1 -->` section at the bottom of the document. This teaches using agents to output `nmem-skill-used: <skill-name>` when applying the skill and instructs them to report deviations or failures using `report_skill_outcome` or the `nmem skills outcome` CLI fallback.
