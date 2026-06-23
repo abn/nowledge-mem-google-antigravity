@@ -27,6 +27,9 @@ When modifying or adding hook scripts under `hooks/` and configuring them in `ho
 * **Space Auto-Detection Heuristics**: Automatically map workspace directories to Nowledge Mem spaces.
   - Heuristics must fall back gracefully to the `default` space.
   - Respect override environment variables (`NMEM_SPACE` or `NMEM_SPACE_ID`) if set.
+* **Host Agent ID Fingerprinting**: Use the shared hooks utility `hooks/nmem_shared.py` to resolve and propagate the host agent ID.
+  - Fingerprinting must remain cross-platform and zero-dependency, supporting Windows, macOS, Linux, and container environments (overlay mounts).
+  - Always export the resolved fingerprint to `os.environ['NMEM_HOST_AGENT_ID']` inside hooks so spawned CLI subprocesses (such as `t import` or `t append`, which lack command-line flags for host ID) inherit the environment context automatically.
 
 ---
 
