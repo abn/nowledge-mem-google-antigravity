@@ -80,3 +80,14 @@ Avoid raw text chat loops for drafting, confirmation, and multi-choice selection
   - Use the native `ask_question` tool with `is_multi_select: true` when asking the user to choose from multiple options (such as selecting which suggested skills to install or which memories to save).
   - List recommended options first, prefixed with `(Recommended)`.
 * **Visual Formatting**: Format all structured content using GitHub-style Alerts (`[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, `[!CAUTION]`), Markdown Tables, and Mermaid diagrams to represent graph relationships.
+
+---
+
+## 7. Skill Development Guidelines
+
+When authoring or modifying skills under `skills/`, follow these principles:
+
+* **Primary and Fallback Interaction Paths**: Every skill that interacts with the `nmem` backend (whether reading working memory, searching, saving handoffs, or distilling memories) should define:
+  1. A **Primary Interaction Mode**: Usually native MCP tools (or specialized helper scripts) to prevent terminal permission prompts and keep execution silent.
+  2. A **CLI Fallback**: A documented fallback command using the `nmem` CLI to ensure the skill remains operational if MCP tools or APIs are disabled or unavailable.
+* **Preferred Execution Hierarchy**: Document these paths clearly in a "Preferred Retrieval Hierarchy" or "Preferred Execution Hierarchy" section within the skill's `SKILL.md` file.
