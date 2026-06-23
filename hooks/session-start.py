@@ -3,17 +3,11 @@ import sys
 import os
 import json
 import subprocess
+from pathlib import Path
 
-def read_hook_input():
-    try:
-        content = sys.stdin.read().strip()
-        return json.loads(content) if content else {}
-    except Exception:
-        return {}
-
-def emit(payload):
-    sys.stdout.write(json.dumps(payload))
-    sys.stdout.flush()
+# Add the hooks directory to sys.path to allow importing nmem_shared
+sys.path.insert(0, str(Path(__file__).parent.resolve()))
+import nmem_shared
 
 def read_nmem(args, keys):
     cmd = ['nmem', '--json'] + args
@@ -48,6 +42,8 @@ def with_startup_args(args):
     next_args = list(args)
     agent_id = os.environ.get('NMEM_AGENT_ID', '').strip()
     host_agent_id = os.environ.get('NMEM_HOST_AGENT_ID', '').strip()
+    if not host_agent_id:
+        host_agent_id = nmem_shared.get_host_agent_fingerprint()
     space = os.environ.get('NMEM_SPACE', '').strip() or os.environ.get('NMEM_SPACE_ID', '').strip()
     
     if agent_id and '--agent-id' not in next_args:
@@ -105,7 +101,7 @@ def read_startup_context():
     return None
 
 def main():
-    hook_input = read_hook_input()
+    hook_input = nmem_shared.read_hook_input()
     invocation_num = hook_input.get('invocationNum')
     initial_num_steps = hook_input.get('initialNumSteps')
     
@@ -116,12 +112,12 @@ def main():
     )
     
     if invocation_num is not None and not is_first:
-        emit({})
+        nmem_shared.emit({})
         return
         
     startup_context = read_startup_context()
     if not startup_context:
-        emit({})
+        nmem_shared.emit({})
     else:
         msg = (
             f"<{startup_context['tag']}>\n"
@@ -130,7 +126,7 @@ def main():
             f"{startup_context['content']}\n"
             f"</{startup_context['tag']}>"
         )
-        emit({
+        nmem_shared.emit({
             'injectSteps': [
                 {
                     'ephemeralMessage': msg

@@ -4,28 +4,26 @@ import os
 import json
 import re
 import subprocess
+from pathlib import Path
 
-def read_hook_input():
-    try:
-        content = sys.stdin.read().strip()
-        return json.loads(content) if content else {}
-    except Exception:
-        return {}
-
-def emit(payload):
-    sys.stdout.write(json.dumps(payload))
-    sys.stdout.flush()
+# Add the hooks directory to sys.path to allow importing nmem_shared
+sys.path.insert(0, str(Path(__file__).parent.resolve()))
+import nmem_shared
 
 def main():
-    hook_input = read_hook_input()
+    hook_input = nmem_shared.read_hook_input()
     conversation_id = hook_input.get('conversationId')
     transcript_path = hook_input.get('transcriptPath')
     
     if not conversation_id or not transcript_path or not os.path.exists(transcript_path):
-        emit({})
+        nmem_shared.emit({})
         return
         
     space = os.environ.get('NMEM_SPACE', '').strip() or os.environ.get('NMEM_SPACE_ID', '').strip()
+    host_agent_id = os.environ.get('NMEM_HOST_AGENT_ID', '').strip()
+    if not host_agent_id:
+        host_agent_id = nmem_shared.get_host_agent_fingerprint()
+    os.environ['NMEM_HOST_AGENT_ID'] = host_agent_id
     
     try:
         messages = []
@@ -144,7 +142,7 @@ def main():
         if os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG'):
             sys.stderr.write(f"Hook execution failed: {e}\n")
             
-    emit({})
+    nmem_shared.emit({})
 
 if __name__ == '__main__':
     main()
