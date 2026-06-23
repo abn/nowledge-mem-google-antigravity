@@ -36,10 +36,24 @@ Do not submit or create the skill silently. Write the proposed draft to a user-f
 ### Step 3: Await Confirmation and Dispatch
 1. Notify the user to review the drafted `skill_draft.md` artifact.
 2. Wait for the user to click the "Proceed" button or give explicit approval in the conversation.
-3. Once approved, call the appropriate MCP tool:
+3. Once approved, dispatch the request.
+
+## Preferred Execution Hierarchy
+
+1. **MCP Tools (Primary)**:
    - **For a new skill**: Call the `create_skill` tool with the drafted parameters (`name`, `purpose`, and optional `memory_ids`, `thread_ids`, `source_ids`).
    - **For a skill improvement**: Call the `propose_skill_improvement` tool with `skill_id` and the drafted `what` description.
-4. Report whether the skill submission was successfully created or proposed.
+2. **CLI Fallback (Only if MCP is unavailable)**:
+   - **For a new skill**:
+     ```bash
+     nmem skills create -y --name "<name>" --note "<purpose>" [--memory <id>] [--thread <id>] [--source <id>]
+     ```
+   - **For a skill improvement**:
+     ```bash
+     nmem skills refine <skill_id> "<what>"
+     ```
+
+Report whether the skill submission was successfully created or proposed.
 
 ---
 
@@ -51,3 +65,4 @@ Nowledge Mem compiled this skill from the user's own experience. When you apply 
     nmem-skill-used: nmem-propose-skill
 
 If a step was wrong or missing, or it didn't work, also record that: call `report_skill_outcome` with `skill_id="nmem-propose-skill"`, `skill_version=1`, an `outcome` of `completed` / `completed_with_deviation` / `failed` / `abandoned`, and a one-line note on what was off. This is the user's own feedback loop, not telemetry.
+(Or use CLI fallback: `nmem skills outcome nmem-propose-skill --version 1 --outcome <outcome> [--deviations "<note>" | --failure "<reason>"]`)
