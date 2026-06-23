@@ -65,6 +65,7 @@ Help agents minimize token usage and avoid bloating the conversation context:
   2. Use `mem_fs` `stat` to check file sizes and metadata cheaply *before* loading bodies.
   3. Use `mem_fs` `cat` with `--line` and `--lines` (or paging limits/offsets for thread fetches) to load only the specific window of content needed.
 * **Deduplication**: Query existing memories via `memory_search` before calling writes to prevent duplicate entries.
+* **CLI/Hook-Based Thread Saving**: The `nmem-save-thread` skill is uniquely designed to use host-side CLI hooks (such as `hooks/session-end.py`) rather than MCP tools. This prevents the agent from loading large, multi-megabyte `transcript.jsonl` files into its context window and serializing them over MCP, optimizing token usage and eliminating context limits on long conversations.
 
 ---
 
