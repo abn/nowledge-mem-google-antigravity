@@ -66,10 +66,53 @@ def make_request(config, path, method='GET', body=None):
     except Exception as e:
         raise Exception(f"Network error: {e}")
 
+def run_cli_list():
+    import subprocess
+    try:
+        result = subprocess.run(
+            ['nmem', 'skills', 'list', '--stage', 'all', '--json'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=15
+        )
+        if result.returncode == 0:
+            data = json.loads(result.stdout)
+            return data.get('skills', [])
+        else:
+            raise Exception(result.stderr or f"Exit code {result.returncode}")
+    except Exception as e:
+        raise Exception(f"CLI fallback failed: {e}")
+
+def run_cli_show(skill_id):
+    import subprocess
+    try:
+        result = subprocess.run(
+            ['nmem', 'skills', 'show', skill_id, '--json'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=15
+        )
+        if result.returncode == 0:
+            return json.loads(result.stdout)
+        else:
+            raise Exception(result.stderr or f"Exit code {result.returncode}")
+    except Exception as e:
+        raise Exception(f"CLI fallback failed: {e}")
+
 def get_skills_list(config):
     # Fetch all skills from nmem
-    res = make_request(config, '/skills')
-    skills = res.get('skills', [])
+    try:
+        res = make_request(config, '/skills')
+        skills = res.get('skills', [])
+    except Exception as e:
+        sys.stderr.write(f"Warning: REST API failed ({e}). Falling back to CLI...\n")
+        try:
+            skills = run_cli_list()
+        except Exception as cli_err:
+            sys.stderr.write(f"Error: {cli_err}\n")
+            sys.exit(1)
     # Filter to only show active, candidate, and archived skills
     allowed_stages = {'active', 'candidate', 'archived'}
     filtered = [s for s in skills if s.get('stage') in allowed_stages]
@@ -177,8 +220,19 @@ def install_command(config, skill_id, workspace_root, ignore_git):
     try:
         # 1. Fetch skill metadata to check stage
         print(f"Retrieving skill details for '{skill_id}'...")
-        skill = make_request(config, f"/skills/{skill_id}")
-        stage = skill.get('stage')
+        use_cli_fallback = False
+        try:
+            skill = make_request(config, f"/skills/{skill_id}")
+            stage = skill.get('stage')
+        except Exception as e:
+            sys.stderr.write(f"Warning: REST API failed ({e}). Falling back to CLI...\n")
+            use_cli_fallback = True
+            try:
+                skill = run_cli_show(skill_id)
+                stage = skill.get('stage')
+            except Exception as cli_err:
+                sys.stderr.write(f"Error: {cli_err}\n")
+                sys.exit(1)
         
         if stage not in {'active', 'candidate', 'archived', 'draft'}:
             sys.stderr.write(f"Error: Skill '{skill_id}' is in stage '{stage}' which is not installable.\n")
@@ -186,30 +240,56 @@ def install_command(config, skill_id, workspace_root, ignore_git):
 
         # 2. Compile if candidate
         if stage == 'candidate':
-            print("Skill is in 'candidate' stage. Compiling skill...")
-            compile_res = make_request(config, f"/agent/trigger/skill-compile?skill_id={skill_id}", method='POST')
-            print(f"Compilation queued: {compile_res}")
-            
-            # Poll until compiled
-            max_attempts = 12
-            compiled = False
-            for attempt in range(max_attempts):
-                time.sleep(2)
-                check = make_request(config, f"/skills/{skill_id}")
-                if check.get('stage') == 'draft':
-                    compiled = True
-                    break
-                print(f"Waiting for compilation (attempt {attempt+1}/{max_attempts})...")
-            
-            if not compiled:
-                sys.stderr.write("Error: Skill compilation timed out.\n")
-                sys.exit(1)
-            print("Skill compiled successfully.")
+            if use_cli_fallback:
+                # Local CLI does not expose trigger endpoint, warn and proceed
+                print("Skill is in 'candidate' stage. CLI fallback cannot trigger REST compilation. Proceeding...")
+            else:
+                print("Skill is in 'candidate' stage. Compiling skill...")
+                try:
+                    compile_res = make_request(config, f"/agent/trigger/skill-compile?skill_id={skill_id}", method='POST')
+                    print(f"Compilation queued: {compile_res}")
+                    
+                    # Poll until compiled
+                    max_attempts = 12
+                    compiled = False
+                    for attempt in range(max_attempts):
+                        time.sleep(2)
+                        check = make_request(config, f"/skills/{skill_id}")
+                        if check.get('stage') == 'draft':
+                            compiled = True
+                            break
+                        print(f"Waiting for compilation (attempt {attempt+1}/{max_attempts})...")
+                    
+                    if not compiled:
+                        sys.stderr.write("Error: Skill compilation timed out.\n")
+                        sys.exit(1)
+                    print("Skill compiled successfully.")
+                except Exception as compile_err:
+                    sys.stderr.write(f"Warning: Skill compilation failed ({compile_err}). Proceeding to retrieve body via CLI...\n")
+                    use_cli_fallback = True
 
         # 3. Fetch body using include_body=true
         print("Fetching skill markdown body...")
-        skill_details = make_request(config, f"/skills/{skill_id}?include_body=true")
-        body = skill_details.get('body')
+        if use_cli_fallback:
+            try:
+                skill_details = run_cli_show(skill_id)
+                body = skill_details.get('body')
+            except Exception as cli_err:
+                sys.stderr.write(f"Error retrieving body via CLI: {cli_err}\n")
+                sys.exit(1)
+        else:
+            try:
+                skill_details = make_request(config, f"/skills/{skill_id}?include_body=true")
+                body = skill_details.get('body')
+            except Exception as e:
+                sys.stderr.write(f"Warning: REST API failed to get body ({e}). Falling back to CLI...\n")
+                try:
+                    skill_details = run_cli_show(skill_id)
+                    body = skill_details.get('body')
+                except Exception as cli_err:
+                    sys.stderr.write(f"Error retrieving body via CLI: {cli_err}\n")
+                    sys.exit(1)
+
         if not body:
             sys.stderr.write("Error: Skill body is empty or could not be generated.\n")
             sys.exit(1)

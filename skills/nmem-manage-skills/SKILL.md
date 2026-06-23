@@ -7,6 +7,11 @@ description: Install, update, or synchronize skills from Nowledge Mem into the l
 
 This skill allows the agent to list, suggest, and install skills from the user's Nowledge Mem knowledge base into the current project workspace.
 
+## Preferred Execution Hierarchy
+
+1. **REST API (Primary)**: The `manage_skills.py` script queries the `nmem` HTTP server (default `http://127.0.0.1:14242`).
+2. **CLI Fallback**: If the server is unreachable or disabled, the script automatically falls back to invoking `nmem skills list` and `nmem skills show` to retrieve and install skills.
+
 ## When to Use
 
 - Use when the user asks to "install a skill", "update a skill", or "import skills from nmem".
