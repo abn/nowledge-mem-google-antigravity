@@ -74,7 +74,7 @@ def main():
                             continue
                         step = json.loads(line)
                         if step.get("source") == "USER_EXPLICIT":
-                            content = step.get("content", "")
+                            content = step.get("content") or ""
                             # Look for keywords signifying explicit memory commands
                             if re.search(r'\b(save|remember|memorize|store|nmem|add to memory|distill|checkpoint|handoff)\b', content, re.IGNORECASE):
                                 user_authorized = True

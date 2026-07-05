@@ -52,7 +52,7 @@ def main():
                     pass
                     
         if not messages:
-            emit({})
+            nmem_shared.emit({})
             return
             
         # Generate clean title from first user request
