@@ -221,9 +221,13 @@ To minimize user interruption (via terminal permission popups), optimize latency
 4. **Diagnostics & Troubleshooting (Prefer CLI)**:
    - **Rule**: Use the `nmem` CLI for human workflows, debugging, and initial setup diagnostics (e.g. `nmem status` or `nmem config client set`).
 
-## Status
+## Status & Diagnostics
 
-When setup seems broken, run:
+To check the server connection, active workspace space, conversation thread sync state, and local offline queue, use the `/nmem-status` command (realized via the `nmem-status` skill). 
+
+This skill prints a visually rich UI (using Markdown tables, status check alerts, and sync lists) summarizing the connection and thread synchronization details.
+
+If direct diagnostics are required or the setup seems completely broken, fall back to running the CLI tool:
 
 ```bash
 nmem status

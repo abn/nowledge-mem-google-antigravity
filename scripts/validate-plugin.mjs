@@ -70,6 +70,7 @@ async function main() {
     'skills/nmem-distill-memory/SKILL.md',
     'skills/nmem-save-thread/SKILL.md',
     'skills/nmem-save-handoff/SKILL.md',
+    'skills/nmem-status/SKILL.md',
     'skills/nmem-fs-explorer/SKILL.md',
     'skills/nmem-manage-skills/SKILL.md',
     'skills/nmem-manage-skills/scripts/manage_skills.py',
