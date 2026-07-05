@@ -18,18 +18,21 @@ This plugin is a hybrid integration of the user's Nowledge Mem knowledge base an
 When modifying or adding hook scripts under `hooks/` and configuring them in `hooks.json`, adhere to the following rules:
 
 * **POSIX Path Safety**: Do NOT use dynamic path variables (such as `${extensionPath}`) inside `hooks.json`. They are not supported by the Antigravity hook runner. Keep invocations generic and POSIX-compliant (e.g. `python3 hooks/session-start.py || python hooks/session-start.py || echo {}`).
+* **Cross-Platform Compatibility (Windows & WSL Bridging)**: All hooks that run CLI commands must route through `nmem_shared.run_nmem_command()` to dynamically handle Windows shims (`nmem.cmd`), WSL path translations (mapping `/mnt/c/...` to `C:\...`), and command-wrapping (`cmd.exe /s /c`).
+* **Log Flush Retry Backoff**: When parsing transcripts or saving threads (such as in `hooks/session-end.py`), wrap execution in a backoff delay loop `(0.0, 0.5, 1.5, 3.0)` to ensure that log buffers written asynchronously by the host are fully written to `transcript.jsonl`.
 * **Latency Optimization**: Spawning subprocesses adds significant overhead (~300-500ms).
   - Pre-invocation, pre-tool, and stop hooks must run quickly (<50ms).
   - In hook scripts, prefer direct HTTP requests to the Nowledge Mem server using python's native `urllib` module rather than spawning `nmem` CLI subprocesses.
-* **Intent-Based Gating**: Preserve the auto-allow logic in `hooks/nmem-gate.py`.
+* **Intent-Based Gating & Command Auto-Allowing**: Preserve the auto-allow logic in `hooks/nmem-gate.py`.
   - It reads `transcript.jsonl` to scan for explicit user intent keywords (`save`, `remember`, `store`, etc.).
   - Safe memory writes with detected user intent should be auto-allowed (`"decision": "allow"`) to minimize user permission prompts, while destructive edits require a prompt (`"decision": "force_ask"`).
+  - Under `PreToolUse` in `hooks.json`, the `run_command` tool is monitored. Auto-approve specific commands (such as the native status script `nmem_status.py`) to bypass command confirmation prompts and provide a premium, prompt-free UX.
 * **Space Auto-Detection Heuristics**: Automatically map workspace directories to Nowledge Mem spaces.
   - Heuristics must fall back gracefully to the `default` space.
   - Respect override environment variables (`NMEM_SPACE` or `NMEM_SPACE_ID`) if set.
 * **Host Agent ID Fingerprinting**: Use the shared hooks utility `hooks/nmem_shared.py` to resolve and propagate the host agent ID.
   - Fingerprinting must remain cross-platform and zero-dependency, supporting Windows, macOS, Linux, and container environments (overlay mounts).
-  - Always export the resolved fingerprint to `os.environ['NMEM_HOST_AGENT_ID']` inside hooks so spawned CLI subprocesses (such as `t import` or `t append`, which lack command-line flags for host ID) inherit the environment context automatically.
+  - Always export the resolved fingerprint to `os.environ['NMEM_HOST_AGENT_ID']` inside hooks so spawned CLI subprocesses inherit the environment context automatically.
 
 ---
 
@@ -50,10 +53,15 @@ Maintain a clean, linear repository history by following these commit guidelines
   ```bash
   npm run validate
   ```
-* The linter (`scripts/validate-plugin.mjs`) checks:
-  - That all required files (rules, skills, hooks, and release notes) are present.
+  Or using `make`:
+  ```bash
+  make validate
+  ```
+* The validation flow (`scripts/validate-plugin.mjs`) checks:
+  - That all required files (rules, skills, hooks, and release notes) are present, including `tests/test_hooks.py` and `hooks/nmem_status.py`.
   - That the version declared in `plugin.json` matches the version in `package.json` exactly.
   - That configuration files like `mcp_config.json` and `hooks.json` contain valid JSON structure.
+  - Runs the Python unit test suite (`tests/test_hooks.py`) using `python3 -m unittest` or `python -m unittest`, failing validation if any test fails.
 
 ---
 
