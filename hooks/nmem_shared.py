@@ -152,3 +152,137 @@ def _get_linux_machine_id() -> str:
             except Exception:
                 pass
     return ""
+
+def save_unsynced_session(conv_id: str, messages: list, title: str, space: str | None, host_agent_id: str | None) -> None:
+    """Save a failed session to the unsynced queue file."""
+    config_dir = Path("~/.nowledge-mem").expanduser()
+    config_dir.mkdir(parents=True, exist_ok=True)
+    queue_path = config_dir / "antigravity_unsynced.json"
+
+    # Load existing queue
+    queue = {}
+    if queue_path.exists():
+        try:
+            queue = json.loads(queue_path.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+
+    # Add/Update session
+    queue[conv_id] = {
+        "conversation_id": conv_id,
+        "messages": messages,
+        "title": title,
+        "space": space,
+        "host_agent_id": host_agent_id
+    }
+
+    # Save back
+    try:
+        queue_path.write_text(json.dumps(queue, indent=2, ensure_ascii=False), encoding="utf-8")
+    except Exception:
+        pass
+
+def retry_unsynced_sessions() -> None:
+    """Attempt to sync any unsynced sessions in the queue."""
+    config_dir = Path("~/.nowledge-mem").expanduser()
+    queue_path = config_dir / "antigravity_unsynced.json"
+    if not queue_path.exists():
+        return
+
+    try:
+        queue = json.loads(queue_path.read_text(encoding="utf-8"))
+    except Exception:
+        return
+
+    if not queue:
+        return
+
+    updated_queue = dict(queue)
+    for conv_id, data in queue.items():
+        messages = data.get("messages", [])
+        title = data.get("title", f"Antigravity Session {conv_id[:8]}")
+        space = data.get("space")
+        host_agent_id = data.get("host_agent_id")
+
+        # 1. Check if thread exists
+        check_args = ['t', 'show', conv_id]
+        if space:
+            check_args.extend(['--space', space])
+
+        thread_exists = False
+        try:
+            result = subprocess.run(
+                ['nmem'] + check_args,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=5
+            )
+            if result.returncode == 0:
+                thread_exists = True
+        except Exception:
+            pass
+
+        success = False
+        if thread_exists:
+            # Append messages
+            append_args = ['t']
+            if space:
+                append_args.extend(['--space', space])
+            append_args.extend([
+                'append',
+                conv_id,
+                '-m', json.dumps(messages)
+            ])
+            try:
+                result = subprocess.run(
+                    ['nmem'] + append_args,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    timeout=5
+                )
+                if result.returncode == 0:
+                    success = True
+            except Exception:
+                pass
+        else:
+            # Import new thread
+            import_args = [
+                't', 'import',
+                '-m', json.dumps(messages),
+                '--id', conv_id,
+                '-t', title,
+                '-s', 'google-antigravity'
+            ]
+            if space:
+                import_args.extend(['--space', space])
+
+            env = os.environ.copy()
+            if host_agent_id:
+                env['NMEM_HOST_AGENT_ID'] = host_agent_id
+            try:
+                result = subprocess.run(
+                    ['nmem'] + import_args,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    env=env,
+                    timeout=5
+                )
+                if result.returncode == 0:
+                    success = True
+            except Exception:
+                pass
+
+        if success:
+            del updated_queue[conv_id]
+
+    # Write back the remaining queue
+    try:
+        if updated_queue:
+            queue_path.write_text(json.dumps(updated_queue, indent=2, ensure_ascii=False), encoding="utf-8")
+        else:
+            queue_path.unlink(missing_ok=True)
+    except Exception:
+        pass

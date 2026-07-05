@@ -101,6 +101,10 @@ def read_startup_context():
     return None
 
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] == '--retry-only':
+        nmem_shared.retry_unsynced_sessions()
+        sys.exit(0)
+
     hook_input = nmem_shared.read_hook_input()
     invocation_num = hook_input.get('invocationNum')
     initial_num_steps = hook_input.get('initialNumSteps')
@@ -111,6 +115,17 @@ def main():
         invocation_num == 1 and (initial_num_steps is None or initial_num_steps <= 2)
     )
     
+    if is_first:
+        try:
+            subprocess.Popen(
+                [sys.executable, __file__, '--retry-only'],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True
+            )
+        except Exception:
+            pass
+
     if invocation_num is not None and not is_first:
         nmem_shared.emit({})
         return

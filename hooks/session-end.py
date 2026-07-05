@@ -107,11 +107,14 @@ def main():
                     text=True,
                     timeout=20
                 )
-                if result.returncode != 0 and (os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG')):
-                    sys.stderr.write(f"nmem t append failed: {result.stderr}\n")
+                if result.returncode != 0:
+                    if os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG'):
+                        sys.stderr.write(f"nmem t append failed: {result.stderr}\n")
+                    nmem_shared.save_unsynced_session(conversation_id, messages, title, space, host_agent_id)
             except Exception as e:
                 if os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG'):
                     sys.stderr.write(f"nmem t append execution failed: {e}\n")
+                nmem_shared.save_unsynced_session(conversation_id, messages, title, space, host_agent_id)
         else:
             # Import new thread
             import_args = [
@@ -132,11 +135,14 @@ def main():
                     text=True,
                     timeout=20
                 )
-                if result.returncode != 0 and (os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG')):
-                    sys.stderr.write(f"nmem t import failed: {result.stderr}\n")
+                if result.returncode != 0:
+                    if os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG'):
+                        sys.stderr.write(f"nmem t import failed: {result.stderr}\n")
+                    nmem_shared.save_unsynced_session(conversation_id, messages, title, space, host_agent_id)
             except Exception as e:
                 if os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG'):
                     sys.stderr.write(f"nmem t import execution failed: {e}\n")
+                nmem_shared.save_unsynced_session(conversation_id, messages, title, space, host_agent_id)
                 
     except Exception as e:
         if os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG'):
