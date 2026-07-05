@@ -6,6 +6,7 @@ import hashlib
 import re
 import subprocess
 import uuid
+import shutil
 from pathlib import Path
 
 def read_hook_input() -> dict:
@@ -153,6 +154,90 @@ def _get_linux_machine_id() -> str:
                 pass
     return ""
 
+def _windows_no_window_kwargs() -> dict[str, int]:
+    if sys.platform != "win32":
+        return {}
+    return {"creationflags": getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)}
+
+def _nmem_command() -> str | None:
+    return shutil.which("nmem") or shutil.which("nmem.cmd")
+
+def _cmd_exe_path(path: str) -> str:
+    normalized = path.replace("\\", "/")
+    parts = normalized.split("/")
+    if (
+        len(parts) > 3
+        and parts[0] == ""
+        and parts[1] == "mnt"
+        and len(parts[2]) == 1
+    ):
+        return f"{parts[2].upper()}:\\" + "\\".join(parts[3:])
+    if len(path) >= 3 and path[1] == ":" and path[2] in ("\\", "/"):
+        return path.replace("/", "\\")
+    if normalized.startswith("/"):
+        wslpath = shutil.which("wslpath")
+        if wslpath:
+            try:
+                proc = subprocess.run(
+                    [wslpath, "-w", path],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
+                    text=True,
+                    timeout=2,
+                    check=False,
+                )
+                converted = proc.stdout.strip()
+                if proc.returncode == 0 and converted:
+                    return converted
+            except Exception:
+                pass
+        distro = os.environ.get("WSL_DISTRO_NAME")
+        if distro:
+            return "\\\\wsl.localhost\\" + distro + normalized.replace("/", "\\")
+    return "nmem.cmd" if Path(path).name.lower() == "nmem.cmd" else path
+
+def _build_nmem_command(nmem: str, *args: str) -> list[str]:
+    if nmem.lower().endswith(".cmd"):
+        return [
+            "cmd.exe",
+            "/s",
+            "/c",
+            subprocess.list2cmdline([_cmd_exe_path(nmem), *args]),
+        ]
+    return [nmem, *args]
+
+def run_nmem_command(args: list[str], env: dict | None = None, cwd: str | None = None, timeout: float | None = None) -> subprocess.CompletedProcess:
+    """Run an nmem command, finding the binary, translating path arguments if needed, and executing safely."""
+    nmem = _nmem_command()
+    if not nmem:
+        raise FileNotFoundError("nowledge-mem: nmem command not found in PATH")
+    
+    is_cmd = nmem.lower().endswith(".cmd")
+    
+    processed_args = []
+    for arg in args:
+        if is_cmd and isinstance(arg, str) and (arg.startswith("/") or arg.startswith("./") or arg.startswith("../")):
+            processed_args.append(_cmd_exe_path(arg))
+        else:
+            processed_args.append(arg)
+            
+    cmd = _build_nmem_command(nmem, *processed_args)
+    
+    run_env = os.environ.copy()
+    if env:
+        run_env.update(env)
+        
+    return subprocess.run(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        env=run_env,
+        cwd=cwd,
+        timeout=timeout,
+        **_windows_no_window_kwargs()
+    )
+
 def save_unsynced_session(conv_id: str, messages: list, title: str, space: str | None, host_agent_id: str | None) -> None:
     """Save a failed session to the unsynced queue file."""
     config_dir = Path("~/.nowledge-mem").expanduser()
@@ -211,13 +296,7 @@ def retry_unsynced_sessions() -> None:
 
         thread_exists = False
         try:
-            result = subprocess.run(
-                ['nmem'] + check_args,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                timeout=5
-            )
+            result = run_nmem_command(check_args, timeout=5)
             if result.returncode == 0:
                 thread_exists = True
         except Exception:
@@ -235,13 +314,7 @@ def retry_unsynced_sessions() -> None:
                 '-m', json.dumps(messages)
             ])
             try:
-                result = subprocess.run(
-                    ['nmem'] + append_args,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                    timeout=5
-                )
+                result = run_nmem_command(append_args, timeout=5)
                 if result.returncode == 0:
                     success = True
             except Exception:
@@ -258,18 +331,11 @@ def retry_unsynced_sessions() -> None:
             if space:
                 import_args.extend(['--space', space])
 
-            env = os.environ.copy()
+            env = {}
             if host_agent_id:
                 env['NMEM_HOST_AGENT_ID'] = host_agent_id
             try:
-                result = subprocess.run(
-                    ['nmem'] + import_args,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                    env=env,
-                    timeout=5
-                )
+                result = run_nmem_command(import_args, env=env, timeout=5)
                 if result.returncode == 0:
                     success = True
             except Exception:

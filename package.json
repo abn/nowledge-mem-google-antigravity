@@ -9,6 +9,7 @@
     "node": ">=20"
   },
   "scripts": {
+    "test": "python3 -m unittest discover -s tests || python -m unittest discover -s tests",
     "validate": "node scripts/validate-plugin.mjs",
     "package:release": "node scripts/package-plugin.mjs",
     "verify:release": "npm run validate && npm run package:release"

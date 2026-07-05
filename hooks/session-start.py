@@ -10,13 +10,10 @@ sys.path.insert(0, str(Path(__file__).parent.resolve()))
 import nmem_shared
 
 def read_nmem(args, keys):
-    cmd = ['nmem', '--json'] + args
+    cmd_args = ['--json'] + args
     try:
-        result = subprocess.run(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
+        result = nmem_shared.run_nmem_command(
+            cmd_args,
             timeout=10
         )
         if result.returncode == 0:
@@ -30,7 +27,7 @@ def read_nmem(args, keys):
                 pass
         else:
             if os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG'):
-                sys.stderr.write(f"nmem command failed: {' '.join(cmd)}\n")
+                sys.stderr.write(f"nmem command failed: {cmd_args}\n")
                 if result.stderr:
                     sys.stderr.write(result.stderr + "\n")
     except Exception as e:

@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
 
 const pluginRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const manifestPath = path.join(pluginRoot, 'plugin.json');
@@ -77,6 +78,7 @@ async function main() {
     'skills/nmem-propose-skill/SKILL.md',
     'scripts/validate-plugin.mjs',
     'scripts/package-plugin.mjs',
+    'tests/test_hooks.py',
     `release-notes/${manifest.version}.md`
   ];
 
@@ -109,6 +111,22 @@ async function main() {
   }
 
   console.log('Validated Google Antigravity plugin manifest, config files, and required release files.');
+
+  console.log('Running hooks unit test suite...');
+  const testProc = spawnSync('python3', ['-m', 'unittest', 'discover', '-s', 'tests'], {
+    cwd: pluginRoot,
+    stdio: 'inherit'
+  });
+  if (testProc.status !== 0) {
+    const testProcFallback = spawnSync('python', ['-m', 'unittest', 'discover', '-s', 'tests'], {
+      cwd: pluginRoot,
+      stdio: 'inherit'
+    });
+    if (testProcFallback.status !== 0) {
+      fail('Hooks unit tests failed.');
+    }
+  }
+  console.log('All hooks unit tests passed.');
 }
 
 await main();
