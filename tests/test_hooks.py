@@ -22,6 +22,7 @@ def import_module_from_path(name, path):
 session_start = import_module_from_path("session_start", str(HOOKS_DIR / "session-start.py"))
 session_end = import_module_from_path("session_end", str(HOOKS_DIR / "session-end.py"))
 nmem_gate = import_module_from_path("nmem_gate", str(HOOKS_DIR / "nmem-gate.py"))
+nmem_status = import_module_from_path("nmem_status", str(HOOKS_DIR / "nmem_status.py"))
 
 class TestNmemShared(unittest.TestCase):
     
@@ -204,6 +205,76 @@ class TestNmemGate(unittest.TestCase):
         written = "".join(call.args[0] for call in mock_write.call_args_list)
         payload = json.loads(written)
         self.assertEqual(payload["decision"], "allow")
+
+    @patch("nmem_gate.read_hook_input")
+    @patch("sys.stdout.write")
+    @patch("sys.stdout.flush")
+    def test_nmem_gate_run_command_status(self, mock_flush, mock_write, mock_input):
+        mock_input.return_value = {
+            "toolCall": {
+                "name": "run_command",
+                "args": {
+                    "CommandLine": "python3 hooks/nmem_status.py --conv-id 123"
+                }
+            }
+        }
+        nmem_gate.main()
+        written = "".join(call.args[0] for call in mock_write.call_args_list)
+        payload = json.loads(written)
+        self.assertEqual(payload["decision"], "allow")
+        self.assertEqual(payload["reason"], "Auto-allowing plugin status command")
+
+    @patch("nmem_gate.read_hook_input")
+    @patch("sys.stdout.write")
+    @patch("sys.stdout.flush")
+    def test_nmem_gate_run_command_other(self, mock_flush, mock_write, mock_input):
+        mock_input.return_value = {
+            "toolCall": {
+                "name": "run_command",
+                "args": {
+                    "CommandLine": "echo 'hello'"
+                }
+            }
+        }
+        nmem_gate.main()
+        written = "".join(call.args[0] for call in mock_write.call_args_list)
+        payload = json.loads(written)
+        # Should fall back to "allow" since it is not an nmem tool
+        self.assertEqual(payload["decision"], "allow")
+
+
+class TestNmemStatus(unittest.TestCase):
+    
+    @patch("nmem_shared.run_nmem_command")
+    @patch("nmem_shared.get_host_agent_fingerprint")
+    @patch("pathlib.Path.exists")
+    @patch("pathlib.Path.read_text")
+    def test_nmem_status_script(self, mock_read_text, mock_exists, mock_fingerprint, mock_run):
+        mock_fingerprint.return_value = "antigravity-test"
+        mock_exists.return_value = True
+        mock_read_text.return_value = json.dumps({
+            "conv-123": {"title": "Test thread"},
+            "conv-2": {"title": "Another thread"}
+        })
+        
+        mock_run.side_effect = [
+            MagicMock(returncode=0, stdout="Connected to backend", stderr=""),
+            MagicMock(returncode=0, stdout="Thread: conv-123\nMessages: 5", stderr="")
+        ]
+        
+        import io
+        from contextlib import redirect_stdout
+        
+        f = io.StringIO()
+        with redirect_stdout(f):
+            with patch("sys.argv", ["nmem_status.py", "--conv-id", "conv-123"]):
+                nmem_status.main()
+                
+        output = f.getvalue()
+        self.assertIn("🟢 Connected", output)
+        self.assertIn("🟢 Synced", output)
+        self.assertIn("conv-123", output)
+        self.assertIn("antigravity-test", output)
 
 
 if __name__ == "__main__":

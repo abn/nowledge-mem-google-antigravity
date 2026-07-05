@@ -66,6 +66,7 @@ async function main() {
     'hooks/session-start.py',
     'hooks/session-end.py',
     'hooks/nmem-gate.py',
+    'hooks/nmem_status.py',
     'skills/nmem-read-working-memory/SKILL.md',
     'skills/nmem-search-memory/SKILL.md',
     'skills/nmem-distill-memory/SKILL.md',

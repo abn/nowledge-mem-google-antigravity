@@ -9,7 +9,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "call_mcp_tool|mcp_nowledge-mem_.*",
+        "matcher": "call_mcp_tool|mcp_nowledge-mem_.*|run_command",
         "hooks": [
           {
             "type": "command",

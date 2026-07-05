@@ -21,6 +21,10 @@ def main():
     tool_name = tool_call.get("name")
     tool_args = tool_call.get("args", {})
 
+    if tool_name == "run_command" and "nmem_status.py" in tool_args.get("CommandLine", ""):
+        emit({"decision": "allow", "reason": "Auto-allowing plugin status command"})
+        return
+
     # Detect if calling nowledge-mem
     is_nmem = False
     sub_tool = ""

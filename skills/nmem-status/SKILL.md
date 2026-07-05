@@ -9,26 +9,13 @@ Check connection status and inspect session synchronizations.
 
 ## Preferred Execution Hierarchy
 
-To construct the status report, follow this sequence:
+To construct the status report, execute the native status command:
 
-1. **Check Server Connection & API Configuration (MCP & CLI)**:
-   - Call the MCP `graph_stats` tool or run `nmem status`.
-   - Parse the outputs to determine the API URL, database status, and server reachability.
-2. **Check Active Context & Environment**:
-   - Read the active environment variables:
-     - `NMEM_HOST_AGENT_ID`: The derived host agent fingerprint. If unset, read from the context bundle or use `hooks/nmem_shared.py` to check it.
-     - `NMEM_SPACE` or `NMEM_SPACE_ID`: The active Nowledge Mem space.
-3. **Verify Current Thread Sync State**:
-   - Check if the current conversation (`conversationId`) has been created/synced in Nowledge Mem.
-   - Run:
-     ```bash
-     nmem t show <conversationId>
-     ```
-     Or call MCP `thread_fetch_messages` with the current `conversationId` and a limit of 1.
-   - Report if it exists, the number of messages, and sync status.
-4. **Check Local Offline Sync Queue**:
-   - Check if there are any failed/unsynced sessions queued locally in `~/.nowledge-mem/antigravity_unsynced.json` that are waiting for retry.
-   - Print the queue status (number of pending sessions).
+```bash
+python3 hooks/nmem_status.py --conv-id <conversationId> || python hooks/nmem_status.py --conv-id <conversationId>
+```
+
+Output the printed stdout report directly to the user.
 
 ## Output Formatting
 
