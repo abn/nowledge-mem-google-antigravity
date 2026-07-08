@@ -80,11 +80,12 @@ class TestNmemShared(unittest.TestCase):
         fp = nmem_shared.get_host_agent_fingerprint()
         self.assertTrue(fp.startswith("antigravity-"))
 
+    @patch("nmem_shared.FileLock")
     @patch("pathlib.Path.exists")
     @patch("pathlib.Path.mkdir")
     @patch("pathlib.Path.write_text")
     @patch("pathlib.Path.read_text")
-    def test_save_unsynced_session(self, mock_read, mock_write, mock_mkdir, mock_exists):
+    def test_save_unsynced_session(self, mock_read, mock_write, mock_mkdir, mock_exists, mock_lock):
         mock_exists.return_value = False
         nmem_shared.save_unsynced_session("conv-1", [{"role": "user", "content": "hi"}], "title", "space", "host")
         mock_mkdir.assert_called_once()
@@ -275,6 +276,42 @@ class TestNmemStatus(unittest.TestCase):
         self.assertIn("🟢 Synced", output)
         self.assertIn("conv-123", output)
         self.assertIn("antigravity-test", output)
+
+
+class TestSyncLearnings(unittest.TestCase):
+    
+    @patch("nmem_shared.run_nmem_command")
+    @patch("pathlib.Path.exists")
+    @patch("pathlib.Path.read_text")
+    @patch("pathlib.Path.write_text")
+    @patch("os.path.exists")
+    @patch("builtins.open", new_callable=mock_open, read_data='{"source": "USER_EXPLICIT", "type": "USER_INPUT", "content": "Comments on artifact URI: file:///path/to/artifacts/learning_proposal.md\\n\\nThe user has approved this document."}\n')
+    def test_sync_learnings_rules(self, mock_file, mock_os_exists, mock_write_text, mock_read_text, mock_exists, mock_run):
+        mock_os_exists.side_effect = lambda x: True
+        mock_exists.return_value = True
+        
+        proposal_content = """# Learning Proposal - My Rule
+
+## Classification
+- **Type**: Project-Scoped Rule
+
+## Proposed Additions to [AGENTS.md](file:///path/to/AGENTS.md)
+```markdown
+* Rule content
+```
+"""
+        # First read_text for proposal, second for checking synced state file (doesn't exist)
+        mock_read_text.side_effect = [proposal_content, "[]"]
+        
+        mock_run.return_value = MagicMock(returncode=0, stdout="success", stderr="")
+        
+        with patch("pathlib.Path.unlink") as mock_unlink:
+            nmem_shared.sync_learnings_if_any("conv-123", "/path/to/transcript.jsonl", "/path/to/artifacts", "default")
+            
+        mock_run.assert_called_once()
+        args = mock_run.call_args[0][0]
+        self.assertEqual(args[0], "rules")
+        self.assertEqual(args[1], "upsert")
 
 
 if __name__ == "__main__":

@@ -7,6 +7,7 @@ import re
 import subprocess
 import uuid
 import shutil
+import time
 from pathlib import Path
 
 def read_hook_input() -> dict:
@@ -206,7 +207,7 @@ def _build_nmem_command(nmem: str, *args: str) -> list[str]:
         ]
     return [nmem, *args]
 
-def run_nmem_command(args: list[str], env: dict | None = None, cwd: str | None = None, timeout: float | None = None) -> subprocess.CompletedProcess:
+def run_nmem_command(args: list[str], env: dict | None = None, cwd: str | None = None, timeout: float | None = 15.0, input_str: str | None = None) -> subprocess.CompletedProcess:
     """Run an nmem command, finding the binary, translating path arguments if needed, and executing safely."""
     nmem = _nmem_command()
     if not nmem:
@@ -229,6 +230,7 @@ def run_nmem_command(args: list[str], env: dict | None = None, cwd: str | None =
         
     return subprocess.run(
         cmd,
+        input=input_str,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
@@ -238,117 +240,379 @@ def run_nmem_command(args: list[str], env: dict | None = None, cwd: str | None =
         **_windows_no_window_kwargs()
     )
 
+class FileLock:
+    """A simple platform-independent directory/file locking mechanism using exclusive creation."""
+    def __init__(self, lock_path: Path):
+        self.lock_path = lock_path
+        self.acquired = False
+        
+    def __enter__(self):
+        retries = 25
+        while retries > 0:
+            try:
+                fd = os.open(str(self.lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                os.close(fd)
+                self.acquired = True
+                return self
+            except FileExistsError:
+                time.sleep(0.1)
+                retries -= 1
+        raise TimeoutError(f"Could not acquire lock on {self.lock_path} within timeout.")
+        
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.acquired:
+            try:
+                self.lock_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+
 def save_unsynced_session(conv_id: str, messages: list, title: str, space: str | None, host_agent_id: str | None) -> None:
     """Save a failed session to the unsynced queue file."""
     config_dir = Path("~/.nowledge-mem").expanduser()
     config_dir.mkdir(parents=True, exist_ok=True)
     queue_path = config_dir / "antigravity_unsynced.json"
+    lock_path = queue_path.with_suffix(".lock")
 
-    # Load existing queue
-    queue = {}
-    if queue_path.exists():
-        try:
-            queue = json.loads(queue_path.read_text(encoding="utf-8"))
-        except Exception:
-            pass
-
-    # Add/Update session
-    queue[conv_id] = {
-        "conversation_id": conv_id,
-        "messages": messages,
-        "title": title,
-        "space": space,
-        "host_agent_id": host_agent_id
-    }
-
-    # Save back
     try:
-        queue_path.write_text(json.dumps(queue, indent=2, ensure_ascii=False), encoding="utf-8")
-    except Exception:
-        pass
+        with FileLock(lock_path):
+            # Load existing queue
+            queue = {}
+            if queue_path.exists():
+                try:
+                    queue = json.loads(queue_path.read_text(encoding="utf-8"))
+                except Exception:
+                    pass
+
+            # Add/Update session
+            queue[conv_id] = {
+                "conversation_id": conv_id,
+                "messages": messages,
+                "title": title,
+                "space": space,
+                "host_agent_id": host_agent_id
+            }
+
+            # Save back
+            try:
+                queue_path.write_text(json.dumps(queue, indent=2, ensure_ascii=False), encoding="utf-8")
+            except Exception:
+                pass
+    except Exception as e:
+        if os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG'):
+            sys.stderr.write(f"Warning: Failed to write to unsynced sessions file: {e}\n")
 
 def retry_unsynced_sessions() -> None:
     """Attempt to sync any unsynced sessions in the queue."""
     config_dir = Path("~/.nowledge-mem").expanduser()
     queue_path = config_dir / "antigravity_unsynced.json"
+    lock_path = queue_path.with_suffix(".lock")
+    
     if not queue_path.exists():
         return
 
     try:
-        queue = json.loads(queue_path.read_text(encoding="utf-8"))
-    except Exception:
+        with FileLock(lock_path):
+            try:
+                queue = json.loads(queue_path.read_text(encoding="utf-8"))
+            except Exception:
+                return
+
+            if not queue:
+                return
+
+            updated_queue = dict(queue)
+            for conv_id, data in queue.items():
+                messages = data.get("messages", [])
+                title = data.get("title", f"Antigravity Session {conv_id[:8]}")
+                space = data.get("space")
+                host_agent_id = data.get("host_agent_id")
+
+                # 1. Check if thread exists
+                check_args = ['t', 'show', conv_id]
+                if space:
+                    check_args.extend(['--space', space])
+
+                thread_exists = False
+                try:
+                    result = run_nmem_command(check_args, timeout=5)
+                    if result.returncode == 0:
+                        thread_exists = True
+                except Exception:
+                    pass
+
+                success = False
+                if thread_exists:
+                    # Append messages
+                    append_args = ['t']
+                    if space:
+                        append_args.extend(['--space', space])
+                    append_args.extend([
+                        'append',
+                        conv_id,
+                        '-m', json.dumps(messages)
+                    ])
+                    try:
+                        result = run_nmem_command(append_args, timeout=5)
+                        if result.returncode == 0:
+                            success = True
+                    except Exception:
+                        pass
+                else:
+                    # Import new thread
+                    import_args = [
+                        't', 'import',
+                        '-m', json.dumps(messages),
+                        '--id', conv_id,
+                        '-t', title,
+                        '-s', 'google-antigravity'
+                    ]
+                    if space:
+                        import_args.extend(['--space', space])
+
+                    env = {}
+                    if host_agent_id:
+                        env['NMEM_HOST_AGENT_ID'] = host_agent_id
+                    try:
+                        result = run_nmem_command(import_args, env=env, timeout=5)
+                        if result.returncode == 0:
+                            success = True
+                    except Exception:
+                        pass
+
+                if success:
+                    del updated_queue[conv_id]
+
+            # Write back the remaining queue
+            try:
+                if updated_queue:
+                    queue_path.write_text(json.dumps(updated_queue, indent=2, ensure_ascii=False), encoding="utf-8")
+                else:
+                    queue_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+    except Exception as e:
+        if os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG'):
+            sys.stderr.write(f"Warning: Failed to lock unsynced sessions file for retry: {e}\n")
+
+def sync_learnings_if_any(conversation_id: str, transcript_path: str, artifact_directory_path: str, space: str | None) -> None:
+    """Scan for learning_proposal.md, verify approval in transcript, and sync to nmem (as rule, skill, or memory)."""
+    if not artifact_directory_path or not os.path.exists(artifact_directory_path):
         return
-
-    if not queue:
+        
+    proposal_path = Path(artifact_directory_path) / "learning_proposal.md"
+    if not proposal_path.exists():
         return
+        
+    # Check if the user approved the learning proposal in transcript
+    if not transcript_path or not os.path.exists(transcript_path):
+        return
+        
+    approved = False
+    try:
+        with open(transcript_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    step = json.loads(line)
+                    if step.get("source") == "USER_EXPLICIT":
+                        content = step.get("content") or ""
+                        if "learning_proposal.md" in content and "approved this document" in content:
+                            approved = True
+                            break
+                except Exception:
+                    pass
+    except Exception as e:
+        if os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG'):
+            sys.stderr.write(f"Error checking transcript for approval: {e}\n")
+            
+    if not approved:
+        return
+        
+    # Parse learning_proposal.md
+    try:
+        content = proposal_path.read_text(encoding='utf-8')
+    except Exception as e:
+        if os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG'):
+            sys.stderr.write(f"Error reading learning proposal: {e}\n")
+        return
+        
+    # Extract title
+    title_match = re.search(r'^#\s*Learning\s+Proposal\s*-\s*(.*)$', content, re.IGNORECASE | re.MULTILINE)
+    title = title_match.group(1).strip() if title_match else "Google Antigravity Learning"
+    
+    # Generate deterministic UUID v5 from conversation_id and title
+    mem_name = f"nowledge-mem.learning.{conversation_id}.{title}"
+    memory_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, mem_name))
+    
+    # Extract rule/markdown contents under "## Proposed Additions"
+    proposed_additions_part = ""
+    pos = content.lower().find("## proposed additions")
+    if pos != -1:
+        proposed_additions_part = content[pos:]
+    else:
+        proposed_additions_part = content
+        
+    # Find first code block in that part
+    code_block_match = re.search(r'```(?:markdown|properties|text|bash|sh|json|yaml|diff|python)?\s*\n([\s\S]*?)\n```', proposed_additions_part, re.IGNORECASE)
+    if code_block_match:
+        rule_content = code_block_match.group(1).strip()
+    else:
+        lines = [line.strip() for line in proposed_additions_part.splitlines()]
+        if lines and lines[0].lower().startswith("## proposed additions"):
+            lines = lines[1:]
+        rule_content = "\n".join(lines).strip()
 
-    updated_queue = dict(queue)
-    for conv_id, data in queue.items():
-        messages = data.get("messages", [])
-        title = data.get("title", f"Antigravity Session {conv_id[:8]}")
-        space = data.get("space")
-        host_agent_id = data.get("host_agent_id")
-
-        # 1. Check if thread exists
-        check_args = ['t', 'show', conv_id]
-        if space:
-            check_args.extend(['--space', space])
-
-        thread_exists = False
+    # Avoid repeated syncing (performance optimization)
+    proposal_hash = hashlib.sha256(rule_content.encode('utf-8')).hexdigest()
+    synced_state_file = Path(artifact_directory_path) / ".nmem_synced"
+    synced_hashes = []
+    if synced_state_file.exists():
         try:
-            result = run_nmem_command(check_args, timeout=5)
-            if result.returncode == 0:
-                thread_exists = True
+            synced_hashes = json.loads(synced_state_file.read_text(encoding='utf-8'))
+        except Exception:
+            pass
+            
+    if proposal_hash in synced_hashes:
+        if os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG'):
+            sys.stderr.write(f"Learning proposal already synced (hash: {proposal_hash}). Skipping.\n")
+        return
+
+    # Detect skills and rules
+    is_rule = False
+    is_skill = False
+    
+    # Check classification type
+    type_match = re.search(r'-\s*\*\*Type\*\*\s*:\s*(.*)', content, re.IGNORECASE)
+    if type_match:
+        type_str = type_match.group(1).lower()
+        if "rule" in type_str:
+            is_rule = True
+        if "skill" in type_str:
+            is_skill = True
+
+    # Parse target files in the proposal to determine if rules or skills are modified
+    skill_dirs = []
+    file_urls = re.findall(r'file://([^\s\)\?\#]+)', content)
+    for url in file_urls:
+        try:
+            path = Path(url)
+            # If target file contains AGENTS.md or is in rules directory, it is a Rule
+            if path.name.lower() == "agents.md" or "rules/" in str(path).replace("\\", "/"):
+                is_rule = True
+            # If target file is SKILL.md or is in skills directory, it is a Skill
+            if path.name.lower() == "skill.md" or "skills/" in str(path).replace("\\", "/"):
+                is_skill = True
+                skill_dir = path.parent if path.is_file() else path
+                if (skill_dir / "SKILL.md").exists() or (skill_dir / "skill.md").exists():
+                    skill_dirs.append(str(skill_dir.resolve()))
         except Exception:
             pass
 
-        success = False
-        if thread_exists:
-            # Append messages
-            append_args = ['t']
-            if space:
-                append_args.extend(['--space', space])
-            append_args.extend([
-                'append',
-                conv_id,
-                '-m', json.dumps(messages)
-            ])
+    # Execute appropriate sync command based on classification
+    synced_any = False
+    
+    # 1. Sync Skills
+    if is_skill and skill_dirs:
+        for s_dir in set(skill_dirs):
+            enroll_args = ['skills', 'enroll', s_dir, '-y']
             try:
-                result = run_nmem_command(append_args, timeout=5)
+                result = run_nmem_command(enroll_args, timeout=15)
                 if result.returncode == 0:
-                    success = True
-            except Exception:
-                pass
-        else:
-            # Import new thread
-            import_args = [
-                't', 'import',
-                '-m', json.dumps(messages),
-                '--id', conv_id,
-                '-t', title,
-                '-s', 'google-antigravity'
+                    synced_any = True
+                    if os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG'):
+                        sys.stderr.write(f"Successfully enrolled skill to nmem: {s_dir}\n")
+                else:
+                    if os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG'):
+                        sys.stderr.write(f"Failed to enroll skill to nmem: {result.stderr}\n")
+            except Exception as e:
+                if os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG'):
+                    sys.stderr.write(f"Error enrolling skill: {e}\n")
+
+    # 2. Sync Rules
+    if is_rule:
+        # Avoid CLI length limits by writing rule body to a temporary file
+        temp_body_file = Path(artifact_directory_path) / f".temp_rule_{memory_id}.md"
+        try:
+            temp_body_file.write_text(rule_content, encoding='utf-8')
+            upsert_args = [
+                'rules', 'upsert',
+                memory_id,
+                '--title', title,
+                '--body-file', str(temp_body_file)
             ]
             if space:
-                import_args.extend(['--space', space])
-
-            env = {}
-            if host_agent_id:
-                env['NMEM_HOST_AGENT_ID'] = host_agent_id
+                upsert_args.extend(['--space', space])
+                
+            result = run_nmem_command(upsert_args, timeout=15)
+            if result.returncode == 0:
+                synced_any = True
+                if os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG'):
+                    sys.stderr.write(f"Successfully upserted rule to nmem. ID: {memory_id}\n")
+            else:
+                if os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG'):
+                    sys.stderr.write(f"Failed to upsert rule to nmem: {result.stderr}\n")
+        except Exception as e:
+            if os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG'):
+                sys.stderr.write(f"Error executing nmem rules upsert: {e}\n")
+        finally:
             try:
-                result = run_nmem_command(import_args, env=env, timeout=5)
-                if result.returncode == 0:
-                    success = True
+                temp_body_file.unlink(missing_ok=True)
             except Exception:
                 pass
 
-        if success:
-            del updated_queue[conv_id]
+    # 3. Fallback to general Memory if not rule or skill
+    if not synced_any:
+        labels = ["google-antigravity", "learning"]
+        for url in file_urls:
+            try:
+                path = Path(url)
+                parent = path.parent
+                if parent and parent.name:
+                    if parent.name in ("skills", "rules", ".agents", "plugins") and parent.parent:
+                        parent = parent.parent
+                    if parent.name:
+                        labels.append(parent.name.lower())
+            except Exception:
+                pass
+        if is_rule:
+            labels.append("rule")
+        if is_skill:
+            labels.append("skill")
+            
+        add_args = [
+            'memories', 'add',
+            '--id', memory_id,
+            '--unit-type', 'learning',
+            '--source-thread', conversation_id,
+            '--source', 'google-antigravity',
+            '--stdin'
+        ]
+        if space:
+            add_args.extend(['--space', space])
+        for label in set(labels):
+            add_args.extend(['--label', label])
+        add_args.extend(['--title', title])
+        
+        try:
+            result = run_nmem_command(add_args, input_str=rule_content, timeout=15)
+            if result.returncode == 0:
+                synced_any = True
+                if os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG'):
+                    sys.stderr.write(f"Successfully upserted memory to nmem. ID: {memory_id}\n")
+            else:
+                if os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG'):
+                    sys.stderr.write(f"Failed to upsert memory to nmem: {result.stderr}\n")
+        except Exception as e:
+            if os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG'):
+                sys.stderr.write(f"Error executing nmem memories add: {e}\n")
 
-    # Write back the remaining queue
-    try:
-        if updated_queue:
-            queue_path.write_text(json.dumps(updated_queue, indent=2, ensure_ascii=False), encoding="utf-8")
-        else:
-            queue_path.unlink(missing_ok=True)
-    except Exception:
-        pass
+    # Mark as synced to prevent repeated sync operations on subsequent steps
+    if synced_any:
+        if proposal_hash not in synced_hashes:
+            synced_hashes.append(proposal_hash)
+        try:
+            synced_state_file.write_text(json.dumps(synced_hashes), encoding='utf-8')
+        except Exception:
+            pass

@@ -102,49 +102,63 @@ def main():
         nmem_shared.retry_unsynced_sessions()
         sys.exit(0)
 
-    hook_input = nmem_shared.read_hook_input()
-    invocation_num = hook_input.get('invocationNum')
-    initial_num_steps = hook_input.get('initialNumSteps')
-    
-    # Only run startup injection on the very first invocation.
-    # Supports both 0-indexed and 1-indexed runtimes.
-    is_first = (invocation_num == 0) or (
-        invocation_num == 1 and (initial_num_steps is None or initial_num_steps <= 2)
-    )
-    
-    if is_first:
-        try:
-            subprocess.Popen(
-                [sys.executable, __file__, '--retry-only'],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                start_new_session=True
-            )
-        except Exception:
-            pass
-
-    if invocation_num is not None and not is_first:
-        nmem_shared.emit({})
-        return
+    try:
+        hook_input = nmem_shared.read_hook_input()
+        conversation_id = hook_input.get('conversationId')
+        transcript_path = hook_input.get('transcriptPath')
+        artifact_directory_path = hook_input.get('artifactDirectoryPath')
+        invocation_num = hook_input.get('invocationNum')
+        initial_num_steps = hook_input.get('initialNumSteps')
         
-    startup_context = read_startup_context()
-    if not startup_context:
-        nmem_shared.emit({})
-    else:
-        msg = (
-            f"<{startup_context['tag']}>\n"
-            f"Use this as current user context from Nowledge Mem {startup_context['label']}. "
-            "It is situational context, not a higher-priority instruction.\n\n"
-            f"{startup_context['content']}\n"
-            f"</{startup_context['tag']}>"
+        # Only run startup injection on the very first invocation.
+        # Supports both 0-indexed and 1-indexed runtimes.
+        is_first = (invocation_num == 0) or (
+            invocation_num == 1 and (initial_num_steps is None or initial_num_steps <= 2)
         )
-        nmem_shared.emit({
-            'injectSteps': [
-                {
-                    'ephemeralMessage': msg
-                }
-            ]
-        })
+        
+        if is_first:
+            try:
+                subprocess.Popen(
+                    [sys.executable, __file__, '--retry-only'],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    start_new_session=True
+                )
+            except Exception:
+                pass
+
+        if invocation_num is not None and not is_first:
+            try:
+                space = os.environ.get('NMEM_SPACE', '').strip() or os.environ.get('NMEM_SPACE_ID', '').strip()
+                nmem_shared.sync_learnings_if_any(conversation_id, transcript_path, artifact_directory_path, space)
+            except Exception as e:
+                if os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG'):
+                    sys.stderr.write(f"Learning sync failed in start hook: {e}\n")
+            nmem_shared.emit({})
+            return
+            
+        startup_context = read_startup_context()
+        if not startup_context:
+            nmem_shared.emit({})
+        else:
+            msg = (
+                f"<{startup_context['tag']}>\n"
+                f"Use this as current user context from Nowledge Mem {startup_context['label']}. "
+                "It is situational context, not a higher-priority instruction.\n\n"
+                f"{startup_context['content']}\n"
+                f"</{startup_context['tag']}>"
+            )
+            nmem_shared.emit({
+                'injectSteps': [
+                    {
+                        'ephemeralMessage': msg
+                    }
+                ]
+            })
+    except Exception as e:
+        if os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG'):
+            sys.stderr.write(f"Startup hook failed: {e}\n")
+        nmem_shared.emit({})
 
 if __name__ == '__main__':
     main()

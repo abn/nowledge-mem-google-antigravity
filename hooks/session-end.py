@@ -5,6 +5,8 @@ import json
 import re
 import time
 import subprocess
+import uuid
+import hashlib
 from pathlib import Path
 
 # Add the hooks directory to sys.path to allow importing nmem_shared
@@ -15,6 +17,7 @@ def main():
     hook_input = nmem_shared.read_hook_input()
     conversation_id = hook_input.get('conversationId')
     transcript_path = hook_input.get('transcriptPath')
+    artifact_directory_path = hook_input.get('artifactDirectoryPath')
     
     if not conversation_id or not transcript_path:
         nmem_shared.emit({})
@@ -27,7 +30,7 @@ def main():
     os.environ['NMEM_HOST_AGENT_ID'] = host_agent_id
     
     try:
-        delays = (0.0, 0.5, 1.5, 3.0)
+        delays = (0.0, 0.5, 1.0)
         success = False
         messages = []
         title = f"Antigravity Session {conversation_id[:8]}"
@@ -92,7 +95,7 @@ def main():
                 
             thread_exists = False
             try:
-                result = nmem_shared.run_nmem_command(check_args, timeout=10)
+                result = nmem_shared.run_nmem_command(check_args, timeout=3)
                 if result.returncode == 0:
                     thread_exists = True
             except Exception as e:
@@ -110,7 +113,7 @@ def main():
                     '-m', json.dumps(messages)
                 ])
                 try:
-                    result = nmem_shared.run_nmem_command(append_args, timeout=20)
+                    result = nmem_shared.run_nmem_command(append_args, timeout=5)
                     if result.returncode == 0:
                         success = True
                         break
@@ -133,7 +136,7 @@ def main():
                     import_args.extend(['--space', space])
                     
                 try:
-                    result = nmem_shared.run_nmem_command(import_args, timeout=20)
+                    result = nmem_shared.run_nmem_command(import_args, timeout=5)
                     if result.returncode == 0:
                         success = True
                         break
@@ -146,6 +149,13 @@ def main():
                         
         if not success and messages:
             nmem_shared.save_unsynced_session(conversation_id, messages, title, space, host_agent_id)
+            
+        # Seamlessly capture /learn learnings to nmem
+        try:
+            nmem_shared.sync_learnings_if_any(conversation_id, transcript_path, artifact_directory_path, space)
+        except Exception as e:
+            if os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG'):
+                sys.stderr.write(f"Learning sync failed: {e}\n")
             
     except Exception as e:
         if os.environ.get('DEBUG') or os.environ.get('NMEM_DEBUG'):

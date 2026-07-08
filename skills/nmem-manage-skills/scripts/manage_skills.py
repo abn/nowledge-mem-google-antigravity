@@ -6,6 +6,7 @@ import urllib.request
 import urllib.error
 import time
 import argparse
+import re
 
 def load_config():
     config_path = os.path.expanduser('~/.nowledge-mem/config.json')
@@ -139,60 +140,63 @@ def suggest_command(config, workspace_root):
         sys.stderr.write(f"Error: Workspace root '{workspace_root}' does not exist.\n")
         sys.exit(1)
 
-    # Analyze files in workspace root
-    makefile_exists = os.path.exists(os.path.join(workspace_root, 'Makefile'))
-    gha_exists = os.path.exists(os.path.join(workspace_root, '.github', 'workflows'))
-    git_exists = os.path.exists(os.path.join(workspace_root, '.git'))
-    
-    flatpak_exists = False
-    aetherpak_exists = False
+    # Gather lowercase workspace terms from files, extensions, and directory names
+    workspace_terms = set()
+    ignored_dirs = {
+        'node_modules', 'venv', '.venv', '.gemini', 'build', 'dist', 
+        '.idea', '.vscode', '__pycache__', '.git', 'out', 'target'
+    }
     for root, dirs, files in os.walk(workspace_root):
-        if '.git' in dirs:
-            dirs.remove('.git')
+        # Modifying dirs in-place tells os.walk not to visit them
+        to_remove = [d for d in dirs if d in ignored_dirs or d.startswith('.')]
+        for d in to_remove:
+            if d in dirs:
+                dirs.remove(d)
+            if d == '.git':
+                workspace_terms.add('git')
+            elif d == '.github':
+                workspace_terms.add('github')
+                workspace_terms.add('gha')
+            else:
+                workspace_terms.add(d.lower())
+
+        for d in dirs:
+            workspace_terms.add(d.lower())
         for f in files:
-            if f.endswith('.flatpak') or f.endswith('.flatpakrepo') or 'flatpak' in f.lower():
-                flatpak_exists = True
-            if 'aetherpak' in f.lower():
-                aetherpak_exists = True
+            workspace_terms.add(f.lower())
+            # Parse extension terms (e.g. cpp, py, md, yaml)
+            ext = os.path.splitext(f)[1]
+            if ext:
+                workspace_terms.add(ext.lower().lstrip('.'))
 
     suggestions = []
 
     try:
         skills = get_skills_list(config)
         for s in skills:
-            sid = s.get('id', '')
+            sid = s.get('id', '').lower()
             title = (s.get('title') or s.get('headline') or '').lower()
             desc = (s.get('description') or '').lower()
             
+            # Combine skill text to search against
+            combined_text = f"{sid} {title} {desc}"
+            
             relevance = 0
             reasons = []
-
-            if "makefile" in title or "makefile" in desc:
-                if makefile_exists:
+            
+            for term in workspace_terms:
+                if len(term) < 3:  # Skip trivial keywords to reduce noise
+                    continue
+                # If term exists as a distinct word in the skill manifest, increase relevance
+                if re.search(r'\b' + re.escape(term) + r'\b', combined_text):
                     relevance += 3
-                    reasons.append("Makefile detected in workspace root")
-            if "github actions" in title or "gha" in title or "github actions" in desc or "semver" in title:
-                if gha_exists:
-                    relevance += 3
-                    reasons.append(".github/workflows directory detected")
-            if "flatpak" in title or "flatpak" in desc:
-                if flatpak_exists:
-                    relevance += 3
-                    reasons.append("Flatpak related files detected")
-            if "aetherpak" in title or "aetherpak" in desc:
-                if aetherpak_exists:
-                    relevance += 4
-                    reasons.append("AetherPak configuration or files detected")
-            if "git" in title or "commit" in title or "git" in desc:
-                if git_exists:
-                    relevance += 2
-                    reasons.append("Git repository detected")
+                    reasons.append(f"'{term}' detected in workspace")
 
             if relevance > 0:
                 suggestions.append({
                     'skill': s,
                     'relevance': relevance,
-                    'reasons': reasons
+                    'reasons': list(set(reasons))
                 })
 
         # Sort suggestions by relevance score descending

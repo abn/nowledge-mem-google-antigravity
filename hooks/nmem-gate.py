@@ -17,11 +17,15 @@ def emit(payload):
 
 def main():
     data = read_hook_input()
-    tool_call = data.get("toolCall", {})
+    tool_call = data.get("toolCall") if isinstance(data, dict) else None
+    if not isinstance(tool_call, dict):
+        tool_call = {}
     tool_name = tool_call.get("name")
-    tool_args = tool_call.get("args", {})
+    tool_args = tool_call.get("args")
+    if not isinstance(tool_args, dict):
+        tool_args = {}
 
-    if tool_name == "run_command" and "nmem_status.py" in tool_args.get("CommandLine", ""):
+    if tool_name == "run_command" and isinstance(tool_args.get("CommandLine"), str) and "nmem_status.py" in tool_args.get("CommandLine"):
         emit({"decision": "allow", "reason": "Auto-allowing plugin status command"})
         return
 
@@ -31,7 +35,7 @@ def main():
     if tool_name == "call_mcp_tool" and tool_args.get("ServerName") == "nowledge-mem":
         is_nmem = True
         sub_tool = tool_args.get("ToolName")
-    elif tool_name.startswith("mcp_nowledge-mem_"):
+    elif isinstance(tool_name, str) and tool_name.startswith("mcp_nowledge-mem_"):
         is_nmem = True
         sub_tool = tool_name[len("mcp_nowledge-mem_"):]
 
