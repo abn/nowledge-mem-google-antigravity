@@ -41,6 +41,7 @@ To minimize token usage, avoid bloating the conversation context, and prevent te
    - Use `memory_neighbors` or `explore_graph` to expand graph neighborhoods selectively.
 3. **CLI Fallback (Only if MCP is unavailable)**:
    - For file actions: `nmem fs ls`, `nmem fs cat --line START --lines COUNT`, `nmem fs stat`, `nmem fs find`, `nmem fs grep`, `nmem fs recall`.
+   - For direct question asking/synthesis across all sources: `nmem ask "question"` (use `--ephemeral` to avoid creating a Timeline entry, and `--json` for structured sources).
    - For memory/thread lookups: `nmem --json m search` or `nmem --json t search` (with pagination).
 
 Prefer the smallest retrieval surface that answers the question.

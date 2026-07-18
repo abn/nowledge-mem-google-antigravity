@@ -108,6 +108,19 @@ nmem --json m search "query"
 
 If the runtime already knows the active project or agent lane, add `--space "<space name>"` to Context Bundle, Working Memory, memory search, thread search, and save commands.
 
+If you need to query or synthesize across memories, threads, and documents directly from the terminal, use:
+
+```bash
+# Ask a question across all sources (Timeline entry is created by default)
+nmem ask "Your question"
+
+# Ask without creating a Timeline entry (one-off check)
+nmem ask "Your question" --ephemeral
+
+# Get a structured JSON response with answer and sources
+nmem --json ask "Your question"
+```
+
 If the recall need is conceptual or the first pass is weak, use deep search:
 
 ```bash
