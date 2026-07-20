@@ -21,7 +21,16 @@ Save proactively when the conversation produces a durable fact, preference, deci
 2. Draft a standalone memory card for each candidate with a clear title and context-complete description.
 3. Write the drafted memories to a user-facing artifact named `distilled_memories_draft.md` under `<appDataDir>/brain/<conversation-id>`.
    - Set `RequestFeedback: true` and `UserFacing: true` in the `ArtifactMetadata` to present a "Proceed" button.
-   - Organize the draft using GitHub-style Alerts (`[!NOTE]`, `[!TIP]`, etc.) to categorize cards by unit type (`decision`, `learning`, `preference`, etc.), and use tables to clearly present their fields.
+   - Format drafted memories using standard markdown header structure and list blocks (instead of tables or Alerts) to preserve paragraphs, lists, and code blocks, ensuring compatibility with nested code blocks:
+     ```markdown
+     ### Card: [Title of Memory]
+     - **Unit Type**: `learning`
+     - **Importance**: `0.8`
+     - **Space**: `lemonade`
+
+     **Content**:
+     [Rich markdown contents, paragraphs, lists, and fenced code blocks are written natively here]
+     ```
    - Use the native `ask_question` tool if the user needs to select or exclude a subset of memories.
 4. Identify semantic relationships between the new memories and existing knowledge (e.g., a new decision superseding an older plan).
    - Draw a Mermaid flowchart (`mermaid` block) inside the `distilled_memories_draft.md` artifact to visualize the relationship graph.
