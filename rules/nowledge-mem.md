@@ -187,7 +187,7 @@ When the user asks you to create, write, teach, or save a Skill, or when you see
 - Do NOT use `memory_add` or save it as a memory card: a skill is a reusable procedure for agents, not a memory note.
 - Draft the skill's name, purpose, and grounding evidence (or the proposed improvement changes).
 - Write the draft to `skill_draft.md` in the artifact directory, setting `RequestFeedback: true` and `UserFacing: true` to request approval via the interactive "Proceed" button.
-- Once approved, call the MCP tool `create_skill` (for a new skill) or `propose_skill_improvement` (for an improvement).
+- Once approved, run the proposal helper script `python3 skills/nmem-propose-skill/scripts/propose_skill.py <appDataDir>/brain/<conversation-id>/skill_draft.md` to directly import the drafted skill markdown. Use the MCP tool `create_skill` or `propose_skill_improvement` only as a fallback.
 
 ## Token Optimization Guidelines
 

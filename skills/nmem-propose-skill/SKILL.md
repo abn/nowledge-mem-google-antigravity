@@ -40,10 +40,16 @@ Do not submit or create the skill silently. Write the proposed draft to a user-f
 
 ## Preferred Execution Hierarchy
 
-1. **MCP Tools (Primary)**:
+1. **Direct REST API Import (Primary - Most Reliable)**:
+   - Run the proposal python script to upload the fully drafted skill markdown directly to Nowledge Mem:
+     ```bash
+     python3 skills/nmem-propose-skill/scripts/propose_skill.py <appDataDir>/brain/<conversation-id>/skill_draft.md
+     ```
+     This bypasses compile-queue failures by directly registering the complete structured procedure.
+2. **MCP Tools (Fallback)**:
    - **For a new skill**: Call the `create_skill` tool with the drafted parameters (`name`, `purpose`, and optional `memory_ids`, `thread_ids`, `source_ids`).
    - **For a skill improvement**: Call the `propose_skill_improvement` tool with `skill_id` and the drafted `what` description.
-2. **CLI Fallback (Only if MCP is unavailable)**:
+3. **CLI Fallback (Only if python script and MCP are unavailable)**:
    - **For a new skill**:
      ```bash
      nmem skills create -y --name "<name>" --note "<purpose>" [--memory <id>] [--thread <id>] [--source <id>]
