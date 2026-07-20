@@ -1,17 +1,24 @@
 ---
 name: nmem-propose-skill
-description: Propose a new skill or submit a skill improvement to Nowledge Mem. Use this skill when the user asks you to create, teach, write, or save a skill, or when you identify an opportunity to propose an improvement to an existing skill's procedure.
+description: Propose a new agent skill or submit a concrete improvement to an existing skill. Use ONLY when the user explicitly requests to write, create, teach, or save an agent skill, or when proposing a concrete improvement to an existing skill. Do NOT use for general codebase changes, project documentation, or memory cards.
 ---
 
 # Propose Skill / Submit Improvement
 
-Use this skill when the user asks you to write, create, teach, or save a Skill, or when you identify an opportunity to propose a concrete improvement to an existing skill's procedure.
+Use this skill ONLY when the user explicitly asks you to write, create, teach, or save a reusable agent Skill, or when you identify a concrete opportunity to propose an improvement to an existing skill's procedure. Do NOT use it for standard codebase development, project documentation, or logging memories.
 
 ## Good Candidates
 
 - Procedures or guidelines you've refined in the session that would be valuable as reusable agent instructions.
 - Additions of safety checks, gotchas, or release steps to existing skills.
 - Custom checklists or orders of operations the user wants to codify.
+
+## When NOT to Use
+
+- **Do NOT use** for general repository or codebase development (e.g., writing Python/JS code, configuring project files, or adding codebase features).
+- **Do NOT use** for drafting or updating standard project-level documentation (such as README.md, CONTRIBUTING.md, or architecture files).
+- **Do NOT use** for logging project memories, decisions, facts, or settings (use `nmem-distill-memory` or `nmem-save-handoff` instead).
+- **Do NOT use** unless the target of the creation or modification is specifically an agent skill file (residing in `.agents/skills/` or a plugin's `skills/` directory).
 
 ## Workflow
 
