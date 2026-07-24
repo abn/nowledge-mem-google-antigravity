@@ -107,3 +107,21 @@ When authoring or modifying skills under `skills/`, follow these principles:
   2. A **CLI Fallback**: A documented fallback command using the `nmem` CLI to ensure the skill remains operational if MCP tools or APIs are disabled or unavailable.
 * **Preferred Execution Hierarchy**: Document these paths clearly in a "Preferred Retrieval Hierarchy" or "Preferred Execution Hierarchy" section within the skill's `SKILL.md` file.
 * **Outcome Feedback Footers**: Include the standard `<!-- nmem:skill-outcome-footer v1 -->` section at the bottom of the document. This teaches using agents to output `nmem-skill-used: <skill-name>` when applying the skill and instructs them to report deviations or failures using `report_skill_outcome` or the `nmem skills outcome` CLI fallback.
+
+---
+
+## 8. Documentation Maintenance & Sync Standards
+
+Whenever adding, modifying, or refactoring features, lifecycle hooks, transport logic, configuration keys, or agent skills, contributing agents **must keep documentation synchronized across all 3 key documentation files**:
+
+1. **User Documentation ([`README.md`](./README.md))**:
+   - Update user-facing feature descriptions, installation instructions, available skills list, and slash command triggers (e.g. `/nmem-load-skill`).
+   - Keep `README.md` clean, approachable, and focused on user setup and usage.
+2. **Technical Deep-Dive ([`ARCHITECTURE.md`](./ARCHITECTURE.md))**:
+   - Document deep technical details, system diagrams (`mermaid` flowcharts), hook execution flow, transport precedence, path resolution rules, and gating security policies.
+   - Update `ARCHITECTURE.md` whenever modifying internal hook mechanics, transport protocols, or configuration resolution order.
+3. **Developer & Maintainer Guidelines ([`AGENTS.md`](./AGENTS.md))**:
+   - Document developer rules, hook development constraints, validation requirements, token optimization guidelines, and skill authoring principles.
+4. **Validation Enforcement ([`scripts/validate-plugin.mjs`](./scripts/validate-plugin.mjs))**:
+   - When adding new skills, scripts, or core documentation files, agents **must** register the new file paths in the `requiredPaths` array inside `scripts/validate-plugin.mjs`.
+   - Run `npm run validate` or `make validate` to verify that all documentation and code assets pass validation cleanly before completing the turn.
