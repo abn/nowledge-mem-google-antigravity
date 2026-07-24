@@ -332,7 +332,7 @@ class TestSyncLearnings(unittest.TestCase):
         self.assertEqual(args[1], "upsert")
 
 
-load_skill = import_module_from_path("load_skill", str(HOOKS_DIR.parent / "skills" / "nmem-load-skill" / "scripts" / "load_skill.py"))
+load_skill = import_module_from_path("load_skill", str(HOOKS_DIR.parent / "skills" / "nmem-skill-load" / "scripts" / "load_skill.py"))
 
 
 class TestLoadSkill(unittest.TestCase):

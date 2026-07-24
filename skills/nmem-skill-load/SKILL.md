@@ -1,6 +1,6 @@
 ---
-name: nmem-load-skill
-description: Search Nowledge Mem for skills matching a query and load or inject them on-demand into the current conversation turn or workspace. Triggered by /nmem-load-skill <query> or proactive task discovery.
+name: nmem-skill-load
+description: Search Nowledge Mem for skills matching a query and load or inject them on-demand into the current conversation turn or workspace. Triggered by /nmem-skill-load <query> or proactive task discovery.
 ---
 
 # Nowledge Mem On-Demand Skill Loader

@@ -1,6 +1,6 @@
 ---
-name: nmem-save-thread
-description: Save the real Google Antigravity session to Nowledge Mem only when the user explicitly asks. This uses Antigravity's transcript-backed importer rather than a summary-only fallback.
+name: nmem-thread-save
+description: Save the real Google Antigravity session to Nowledge Mem only when the user explicitly asks. This uses Antigravity's transcript-backed importer rather than a summary-only fallback. Triggered by /nmem-thread-save.
 ---
 
 # Save Thread

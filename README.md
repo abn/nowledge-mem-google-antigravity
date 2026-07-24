@@ -79,16 +79,16 @@ Release packaging notes live in [`RELEASING.md`](./RELEASING.md).
 
 **Agent skills**
 
-- `nmem-read-working-memory`
-- `nmem-search-memory`
-- `nmem-distill-memory`
-- `nmem-save-thread`
-- `nmem-save-handoff`
-- `nmem-fs-explorer`
-- `nmem-manage-skills`
-- `nmem-load-skill`
+- `nmem-fs-explore`
+- `nmem-memory-distill`
+- `nmem-memory-search`
+- `nmem-memory-working`
+- `nmem-skill-load`
+- `nmem-skill-manage`
+- `nmem-skill-propose`
 - `nmem-status`
-- `nmem-propose-skill`
+- `nmem-thread-handoff`
+- `nmem-thread-save`
 
 ## Local vs Remote
 
@@ -136,15 +136,15 @@ nmem status
 
 Antigravity supports two separate save paths:
 
-- **Thread Save** (`nmem-save-thread` skill): Imports the **real session messages** into Nowledge Mem. The Stop hook performs this import automatically at the end of the session, but the skill is available for manual mid-session triggers.
-- **Handoff Save** (`nmem-save-handoff` skill): Creates a **compact resumable handoff summary** with Goal, Decisions, Files, Risks, and Next. Use this when you want a lightweight restart point rather than the full transcript.
+- **Thread Save** (`nmem-thread-save` skill / `/nmem-thread-save`): Imports the **real session messages** into Nowledge Mem. The Stop hook performs this import automatically at the end of the session, but the skill is available for manual mid-session triggers.
+- **Handoff Save** (`nmem-thread-handoff` skill / `/nmem-thread-handoff`): Creates a **compact resumable handoff summary** with Goal, Decisions, Files, Risks, and Next. Use this when you want a lightweight restart point rather than the full transcript.
 
-Use `nmem-distill-memory` for durable atomic knowledge, `nmem-save-thread` for the full session, and `nmem-save-handoff` for a resumable handoff.
+Use `nmem-memory-distill` for durable atomic knowledge, `nmem-thread-save` for the full session, and `nmem-thread-handoff` for a resumable handoff.
 
 ## Workspace Skill Management
 
-- **Install/Update Skill** (`nmem-manage-skills` skill): Evaluates the project context, lists active/archived/candidate skills from Nowledge Mem, and helps recommend and install them into `<workspace-root>/.agents/skills/<skill-folder>/`. Users can choose to commit these skills to git or keep them local-only (via git-exclude).
-- **On-Demand Skill Loader** (`nmem-load-skill` skill / `/nmem-load-skill <query>`): Dynamically searches candidate/compiled skills on Nowledge Mem and loads them into the active turn (Ephemeral Mode) or installs them locally (Persistent Mode). Triggered explicitly via `/nmem-load-skill <query>` or automatically when Antigravity detects an unhandled domain task with an available skill definition.
+- **Install/Update Skill** (`nmem-skill-manage` skill / `/nmem-skill-manage`): Evaluates the project context, lists active/archived/candidate skills from Nowledge Mem, and helps recommend and install them into `<workspace-root>/.agents/skills/<skill-folder>/`. Users can choose to commit these skills to git or keep them local-only (via git-exclude).
+- **On-Demand Skill Loader** (`nmem-skill-load` skill / `/nmem-skill-load <query>`): Dynamically searches candidate/compiled skills on Nowledge Mem and loads them into the active turn (Ephemeral Mode) or installs them locally (Persistent Mode). Triggered explicitly via `/nmem-skill-load <query>` or automatically when Antigravity detects an unhandled domain task with an available skill definition.
 
 ## Links
 

@@ -1,6 +1,6 @@
 ---
-name: nmem-propose-skill
-description: Propose a new agent skill or submit a concrete improvement to an existing skill. Use ONLY when the user explicitly requests to write, create, teach, or save an agent skill, or when proposing a concrete improvement to an existing skill. Do NOT use for general codebase changes, project documentation, or memory cards.
+name: nmem-skill-propose
+description: Propose a new agent skill or submit a concrete improvement to an existing skill. Use ONLY when the user explicitly requests to write, create, teach, or save an agent skill, or when proposing a concrete improvement to an existing skill. Triggered by /nmem-skill-propose.
 ---
 
 # Propose Skill / Submit Improvement
@@ -50,7 +50,7 @@ Do not submit or create the skill silently. Write the proposed draft to a user-f
 1. **Direct REST API Import (Primary - Most Reliable)**:
    - Run the proposal python script to upload the fully drafted skill markdown directly to Nowledge Mem:
      ```bash
-     python3 skills/nmem-propose-skill/scripts/propose_skill.py <appDataDir>/brain/<conversation-id>/skill_draft.md
+     python3 skills/nmem-skill-propose/scripts/propose_skill.py <appDataDir>/brain/<conversation-id>/skill_draft.md
      ```
      This bypasses compile-queue failures by directly registering the complete structured procedure.
 2. **MCP Tools (Fallback)**:
@@ -75,7 +75,7 @@ Report whether the skill submission was successfully created or proposed.
 
 Nowledge Mem compiled this skill from the user's own experience. When you apply it, print one line so it keeps getting sharper (replace `<name>` with this skill's name from the frontmatter above):
 
-    nmem-skill-used: nmem-propose-skill
+    nmem-skill-used: nmem-skill-propose
 
-If a step was wrong or missing, or it didn't work, also record that: call `report_skill_outcome` with `skill_id="nmem-propose-skill"`, `skill_version=1`, an `outcome` of `completed` / `completed_with_deviation` / `failed` / `abandoned`, and a one-line note on what was off. This is the user's own feedback loop, not telemetry.
-(Or use CLI fallback: `nmem skills outcome nmem-propose-skill --version 1 --outcome <outcome> [--deviations "<note>" | --failure "<reason>"]`)
+If a step was wrong or missing, or it didn't work, also record that: call `report_skill_outcome` with `skill_id="nmem-skill-propose"`, `skill_version=1`, an `outcome` of `completed` / `completed_with_deviation` / `failed` / `abandoned`, and a one-line note on what was off. This is the user's own feedback loop, not telemetry.
+(Or use CLI fallback: `nmem skills outcome nmem-skill-propose --version 1 --outcome <outcome> [--deviations "<note>" | --failure "<reason>"]`)

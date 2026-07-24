@@ -104,20 +104,20 @@ To minimize user prompt friction and context bloat, select the appropriate trans
 
 ---
 
-## 🧩 Dynamic Skill Loader Architecture (`nmem-load-skill`)
+## 🧩 Dynamic Skill Loader Architecture (`nmem-skill-load`)
 
-The `nmem-load-skill` skill allows Antigravity to dynamically search, preview, and load candidate/compiled skills from Nowledge Mem:
+The `nmem-skill-load` skill allows Antigravity to dynamically search, preview, and load candidate/compiled skills from Nowledge Mem:
 
 ```mermaid
 flowchart LR
-    A[Trigger: /nmem-load-skill or Unhandled Task] --> B[load_skill.py search query]
+    A[Trigger: /nmem-skill-load or Unhandled Task] --> B[load_skill.py search query]
     B --> C[load_skill.py fetch skill_id]
     C --> D{Injection Mode}
     D -->|Ephemeral Mode| E[Inject Skill Body into Active Turn Context]
     D -->|Persistent Mode| F[Install to .agents/skills/skill-name/SKILL.md]
 ```
 
-- **Slash Command**: `/nmem-load-skill <query>`
+- **Slash Command**: `/nmem-skill-load <query>`
 - **Proactive Discovery**: Triggered automatically when Antigravity detects an unhandled domain task (Makefile, RPM packaging, Flatpak, Docker) with an available skill definition on the Nowledge Mem server.
 - **Modes**:
   - **Ephemeral Mode (Zero-Restart)**: Ingests the fetched skill body directly into the active turn context for immediate execution without writing files to disk.

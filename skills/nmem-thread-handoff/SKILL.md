@@ -1,6 +1,6 @@
 ---
-name: nmem-save-handoff
-description: Save a concise Google Antigravity handoff summary only when the user explicitly asks. This is intentionally separate from full thread-save, which should use the native session importer script.
+name: nmem-thread-handoff
+description: Save a concise Google Antigravity handoff summary only when the user explicitly asks. This is intentionally separate from full thread-save, which should use the native session importer script. Triggered by /nmem-thread-handoff.
 ---
 
 # Save Handoff

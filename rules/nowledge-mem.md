@@ -237,11 +237,11 @@ To minimize user interruption (via terminal permission popups), optimize latency
 
 ## Status & Diagnostics
 
-## Dynamic Skill Discovery & On-Demand Loading (`/nmem-load-skill`)
+## Dynamic Skill Discovery & On-Demand Loading (`/nmem-skill-load`)
 
-When the user runs `/nmem-load-skill <query>` or when Antigravity discovers an unhandled domain task (e.g., Makefile optimizations, Fedora RPM packaging, Flatpak setups, database migrations) where a relevant skill exists on Nowledge Mem:
+When the user runs `/nmem-skill-load <query>` or when Antigravity discovers an unhandled domain task (e.g., Makefile optimizations, Fedora RPM packaging, Flatpak setups, database migrations) where a relevant skill exists on Nowledge Mem:
 
-1. **Query & Preview**: Search the Nowledge Mem server using `skills/nmem-load-skill/scripts/load_skill.py search "<query>"`.
+1. **Query & Preview**: Search the Nowledge Mem server using `skills/nmem-skill-load/scripts/load_skill.py search "<query>"`.
 2. **Present Choice**: Present matching skills via `ask_question` or present a `skill_load_plan.md` artifact.
 3. **Fetch & Inject**: Fetch the skill body (`load_skill.py fetch "<id>"`) and inject it into the active conversation turn (Ephemeral Mode) or install it to `.agents/skills/<name>/SKILL.md` (Persistent Mode).
 

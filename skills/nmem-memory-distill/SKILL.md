@@ -1,6 +1,6 @@
 ---
-name: nmem-distill-memory
-description: Detect breakthrough moments, durable lessons, and decisions worth preserving. Suggest distillation sparingly, then store high-value knowledge as atomic memories.
+name: nmem-memory-distill
+description: Detect breakthrough moments, durable lessons, and decisions worth preserving. Suggest distillation sparingly, then store high-value knowledge as atomic memories. Triggered by /nmem-memory-distill.
 ---
 
 # Distill Memory

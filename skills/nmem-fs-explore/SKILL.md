@@ -1,6 +1,6 @@
 ---
-name: nmem-fs-explorer
-description: Browse and navigate Nowledge Mem's virtual filesystem (mem_fs) to locate, preview, and read memories, threads, wiki pages, and library artifacts.
+name: nmem-fs-explore
+description: Browse and navigate Nowledge Mem's virtual filesystem (mem_fs) to locate, preview, and read memories, threads, wiki pages, and library artifacts. Triggered by /nmem-fs-explore.
 ---
 
 # Nowledge FS Explorer
