@@ -98,10 +98,17 @@ Avoid raw text chat loops for drafting, confirmation, and multi-choice selection
 
 When authoring or modifying skills under `skills/`, follow these principles:
 
-* **File Location & Naming**: Each skill must be placed in its own folder under `skills/<skill-folder>/SKILL.md` (e.g. `skills/nmem-search-memory/SKILL.md`).
+* **File Location & Naming**: Each skill must be placed in its own folder under `skills/<skill-folder>/SKILL.md` (e.g. `skills/nmem-memory-search/SKILL.md`).
+* **Unified Naming Strategy (`nmem-<domain>-<action>`)**: All skills must follow the strict kebab-case pattern `nmem-<domain>-<action>`:
+  - **Skill Domain**: `nmem-skill-load`, `nmem-skill-manage`, `nmem-skill-propose`
+  - **Memory Domain**: `nmem-memory-search`, `nmem-memory-distill`, `nmem-memory-working`
+  - **Thread Domain**: `nmem-thread-save`, `nmem-thread-handoff`
+  - **Filesystem Domain**: `nmem-fs-explore`
+  - **System Domain**: `nmem-status`
+  Slash command triggers must align with the skill name (e.g. `/nmem-skill-load <query>`, `/nmem-thread-save`).
 * **YAML Frontmatter Trigger Matching**: Every `SKILL.md` must start with a YAML frontmatter block containing:
-  - `name`: Kebab-cased unique name matching the folder name.
-  - `description`: A clear, third-person explanation of what behavior the skill teaches and when the agent should use it. This description is parsed by Antigravity at startup to dynamically discover and load relevant skills, so it must contain relevant keywords.
+  - `name`: Kebab-cased unique name matching the folder name exactly (e.g. `nmem-skill-load`).
+  - `description`: A clear, third-person explanation of what behavior the skill teaches and when the agent should use it. Include slash command triggers in the description. This description is parsed by Antigravity at startup to dynamically discover and load relevant skills.
 * **Primary and Fallback Interaction Paths**: Every skill that interacts with the `nmem` backend (whether reading working memory, searching, saving handoffs, or distilling memories) should define:
   1. A **Primary Interaction Mode**: Usually native MCP tools (or specialized helper scripts) to prevent terminal permission prompts and keep execution silent.
   2. A **CLI Fallback**: A documented fallback command using the `nmem` CLI to ensure the skill remains operational if MCP tools or APIs are disabled or unavailable.
