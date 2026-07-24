@@ -17,9 +17,9 @@ The recommended setup is simple and stable: Google Antigravity on top, MCP for d
 
 - [Google Antigravity 2.0](https://antigravity.google)
 - [Nowledge Mem](https://mem.nowledge.co) running locally, or a reachable remote Nowledge Mem server
-- `nmem` CLI in your `PATH`
+- `nmem` CLI in your `PATH` (or installed via standard Linux packages at `/usr/lib/nowledge-mem/nmem` / `/usr/lib64/nowledge-mem/nmem`)
 
-If Nowledge Mem is already running on the same machine through the desktop app, install the bundled CLI from **Settings -> Preferences -> Developer Tools -> Install CLI**. That gives Antigravity direct access to the local Mem instance.
+If Nowledge Mem is already running on the same machine through the desktop app, install the bundled CLI from **Settings -> Preferences -> Developer Tools -> Install CLI**. That gives Antigravity direct access to the local Mem instance. The plugin automatically resolves system installation paths if sandboxed subshells restrict user `$PATH` symlinks.
 
 Verify connection:
 
@@ -65,8 +65,8 @@ Release packaging notes live in [`RELEASING.md`](./RELEASING.md).
 
 **Automatic lifecycle hooks**
 
-- **PreInvocation Hook**: Automatically loads Context Bundle when available, with Working Memory as the lightweight fallback, and injects it as situational context at the start of the session.
-- **Stop Hook**: Automatically imports the conversation messages from Antigravity's `transcript.jsonl` log into Nowledge Mem under the current conversation ID when execution completes.
+- **PreInvocation Hook**: Automatically loads Context Bundle when available, with Working Memory as the lightweight fallback, and injects it as situational context at the start of the session. Prioritizes direct native HTTP REST transport (<30ms latency), falling back to CLI subprocess execution.
+- **Stop Hook**: Automatically imports conversation messages from Antigravity's `transcript.jsonl` log into Nowledge Mem under the current conversation ID when execution completes. Prioritizes direct native HTTP REST transport, falling back to CLI execution and local offline buffer queuing (`~/.nowledge-mem/antigravity_unsynced.json`).
 
 **Bundled MCP**
 
@@ -75,7 +75,7 @@ Release packaging notes live in [`RELEASING.md`](./RELEASING.md).
 
 **Persistent context rules**
 
-- `rules/nowledge-mem.md` tells Antigravity how to route recall across Context Bundle, Working Memory, distilled memories, conversation threads, and handoff summaries.
+- `rules/nowledge-mem.md` tells Antigravity how to route recall across Context Bundle, Working Memory, distilled memories, conversation threads, handoff summaries, and positional CLI fallback signatures.
 
 **Agent skills**
 
@@ -86,6 +86,9 @@ Release packaging notes live in [`RELEASING.md`](./RELEASING.md).
 - `nmem-save-handoff`
 - `nmem-fs-explorer`
 - `nmem-manage-skills`
+- `nmem-load-skill`
+- `nmem-status`
+- `nmem-propose-skill`
 
 ## Local vs Remote
 
@@ -141,6 +144,7 @@ Use `nmem-distill-memory` for durable atomic knowledge, `nmem-save-thread` for t
 ## Workspace Skill Management
 
 - **Install/Update Skill** (`nmem-manage-skills` skill): Evaluates the project context, lists active/archived/candidate skills from Nowledge Mem, and helps recommend and install them into `<workspace-root>/.agents/skills/<skill-folder>/`. Users can choose to commit these skills to git or keep them local-only (via git-exclude).
+- **On-Demand Skill Loader** (`nmem-load-skill` skill / `/nmem-load-skill <query>`): Dynamically searches candidate/compiled skills on Nowledge Mem and loads them into the active turn (Ephemeral Mode) or installs them locally (Persistent Mode). Triggered explicitly via `/nmem-load-skill <query>` or automatically when Antigravity detects an unhandled domain task with an available skill definition.
 
 ## Links
 
