@@ -47,8 +47,8 @@ async function main() {
   if (!server || typeof server !== 'object') {
     fail('mcp_config.json must define mcpServers.nowledge-mem');
   }
-  if (server.serverUrl !== 'http://127.0.0.1:14242/mcp/') {
-    fail('mcp_config.json nowledge-mem.serverUrl must point to the local Mem MCP endpoint');
+  if (typeof server.serverUrl !== 'string' || !server.serverUrl.endsWith('/mcp/') || (!server.serverUrl.startsWith('http://') && !server.serverUrl.startsWith('https://'))) {
+    fail('mcp_config.json nowledge-mem.serverUrl must be a valid http(s) URL ending with /mcp/');
   }
   if (server.headers?.APP !== 'Google Antigravity') {
     fail('mcp_config.json nowledge-mem.headers.APP must be "Google Antigravity"');

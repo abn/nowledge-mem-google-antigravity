@@ -71,7 +71,8 @@ Release packaging notes live in [`RELEASING.md`](./RELEASING.md).
 **Bundled MCP**
 
 - Local same-machine installs expose `nowledge-mem` MCP tools at `http://127.0.0.1:14242/mcp/` automatically.
-- Antigravity `mcp_config.json` can override the same `nowledge-mem` server name for remote Mem or a custom local endpoint.
+- The startup hook automatically synchronizes `mcp_config.json` with effective client settings (`~/.nowledge-mem/config.json` or `NMEM_API_URL`/`NMEM_API_KEY`). For remote Mem, `mcp_config.json` is updated dynamically with the remote server URL and authentication headers (`Authorization: Bearer` and `X-MEM-API-Key`).
+- `mcp_config.json` is ignored by `.gitignore` so runtime syncs on cloned repositories never create uncommitted git status noise. (Developers wishing to commit template changes can use `git add -f mcp_config.json`).
 
 **Persistent context rules**
 

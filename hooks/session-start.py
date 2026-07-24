@@ -130,6 +130,12 @@ def main():
         sys.exit(0)
 
     try:
+        # Synchronize plugin mcp_config.json with effective client configuration
+        try:
+            nmem_shared.sync_mcp_config_file()
+        except Exception:
+            pass
+
         hook_input = nmem_shared.read_hook_input()
         conversation_id = hook_input.get('conversationId')
         transcript_path = hook_input.get('transcriptPath')

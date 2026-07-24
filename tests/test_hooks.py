@@ -1,6 +1,7 @@
 import sys
 import os
 import json
+import tempfile
 import unittest
 from unittest.mock import patch, MagicMock, mock_open
 from pathlib import Path
@@ -81,6 +82,27 @@ class TestNmemShared(unittest.TestCase):
         
         fp = nmem_shared.get_host_agent_fingerprint()
         self.assertTrue(fp.startswith("antigravity-"))
+
+    @patch("nmem_shared.get_effective_config")
+    def test_sync_mcp_config_file(self, mock_get_effective_config):
+        mock_get_effective_config.return_value = ("https://mem.example.com", "nmem_sec_123")
+        with tempfile.NamedTemporaryFile("w+", delete=False) as tf:
+            tf.write('{"mcpServers":{"nowledge-mem":{"serverUrl":"http://127.0.0.1:14242/mcp/"}}}')
+            tf_path = tf.name
+        try:
+            updated = nmem_shared.sync_mcp_config_file(tf_path)
+            self.assertTrue(updated)
+            data = json.loads(Path(tf_path).read_text(encoding="utf-8"))
+            self.assertEqual(data["mcpServers"]["nowledge-mem"]["serverUrl"], "https://mem.example.com/mcp/")
+            self.assertEqual(data["mcpServers"]["nowledge-mem"]["headers"]["Authorization"], "Bearer nmem_sec_123")
+            self.assertEqual(data["mcpServers"]["nowledge-mem"]["headers"]["X-MEM-API-Key"], "nmem_sec_123")
+            
+            # Second call should return False (already up to date)
+            updated_again = nmem_shared.sync_mcp_config_file(tf_path)
+            self.assertFalse(updated_again)
+        finally:
+            if os.path.exists(tf_path):
+                os.unlink(tf_path)
 
     @patch("nmem_shared.FileLock")
     @patch("pathlib.Path.exists")

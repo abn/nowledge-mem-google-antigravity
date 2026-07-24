@@ -185,6 +185,51 @@ def get_effective_config() -> tuple[str, str | None]:
 
     return api_url.rstrip("/"), api_key
 
+def sync_mcp_config_file(mcp_config_path: str = None) -> bool:
+    """Synchronize plugin mcp_config.json with effective client configuration
+    (~/.nowledge-mem/config.json or NMEM_API_URL/NMEM_API_KEY env vars).
+    Returns True if mcp_config.json was updated, False if already up to date.
+    """
+    if mcp_config_path is None:
+        mcp_config_path = str(Path(__file__).parent.parent / "mcp_config.json")
+
+    api_url, api_key = get_effective_config()
+    clean_url = api_url.rstrip("/")
+    server_url = f"{clean_url}/mcp/"
+
+    headers = {"APP": "Google Antigravity"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+        headers["X-MEM-API-Key"] = api_key
+
+    target_data = {
+        "mcpServers": {
+            "nowledge-mem": {
+                "serverUrl": server_url,
+                "headers": headers
+            }
+        }
+    }
+
+    p = Path(mcp_config_path)
+    current_data = None
+    if p.exists():
+        try:
+            current_data = json.loads(p.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+
+    if current_data == target_data:
+        return False
+
+    try:
+        p.write_text(json.dumps(target_data, indent=2) + "\n", encoding="utf-8")
+        return True
+    except Exception as e:
+        if os.environ.get("DEBUG") or os.environ.get("NMEM_DEBUG"):
+            sys.stderr.write(f"Warning: Failed to sync mcp_config.json: {e}\n")
+        return False
+
 def http_request(endpoint: str, method: str = "GET", payload: dict | None = None, timeout: float = 5.0) -> dict | None:
     """Make a direct HTTP request to the Nowledge Mem backend prior to CLI fallback."""
     import urllib.request
