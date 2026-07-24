@@ -40,9 +40,13 @@ To minimize token usage, avoid bloating the conversation context, and prevent te
    - Use `thread_search` followed by `thread_fetch_messages` (always passing a small `limit` like `5` or `10`) to paginatedly check thread histories.
    - Use `memory_neighbors` or `explore_graph` to expand graph neighborhoods selectively.
 3. **CLI Fallback (Only if MCP is unavailable)**:
-   - For file actions: `nmem fs ls`, `nmem fs cat --line START --lines COUNT`, `nmem fs stat`, `nmem fs find`, `nmem fs grep`, `nmem fs recall`.
+   - **Important**: `nmem fs` CLI commands take **positional arguments** (do NOT pass `--query` or `--path` flags):
+     - Recall: `nmem fs recall "<query>"`
+     - Read/Cat: `nmem fs cat "<path>" --line START --lines COUNT`
+     - Grep: `nmem fs grep "<pattern>" <path>`
+     - Stat/Find/Ls: `nmem fs stat "<path>"`, `nmem fs find "<query>"`, `nmem fs ls /`
    - For direct question asking/synthesis across all sources: `nmem ask "question"` (use `--ephemeral` to avoid creating a Timeline entry, and `--json` for structured sources).
-   - For memory/thread lookups: `nmem --json m search` or `nmem --json t search` (with pagination).
+   - For memory/thread lookups: `nmem --json m search "<query>"` or `nmem --json t search "<query>"` (with pagination).
 
 Prefer the smallest retrieval surface that answers the question.
 
