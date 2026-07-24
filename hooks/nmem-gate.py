@@ -51,7 +51,8 @@ def main():
         "list_communities", "get_community_details", "get_wiki_page",
         "explore_graph", "query_sources", "query_library", "read_source_content", 
         "read_artifact_content", "search_source_chunks", "search_artifact_chunks", 
-        "analyze_source_data", "analyze_artifact_data", "mem_fs"
+        "analyze_source_data", "analyze_artifact_data", "mem_fs",
+        "get_memory_by_id", "memory_neighbors", "report_skill_outcome"
     }
     if sub_tool in read_only:
         emit({
