@@ -77,6 +77,8 @@ async function main() {
     'skills/nmem-manage-skills/SKILL.md',
     'skills/nmem-manage-skills/scripts/manage_skills.py',
     'skills/nmem-propose-skill/SKILL.md',
+    'skills/nmem-load-skill/SKILL.md',
+    'skills/nmem-load-skill/scripts/load_skill.py',
     'scripts/validate-plugin.mjs',
     'scripts/package-plugin.mjs',
     'tests/test_hooks.py',

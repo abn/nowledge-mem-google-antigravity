@@ -332,5 +332,32 @@ class TestSyncLearnings(unittest.TestCase):
         self.assertEqual(args[1], "upsert")
 
 
+load_skill = import_module_from_path("load_skill", str(HOOKS_DIR.parent / "skills" / "nmem-load-skill" / "scripts" / "load_skill.py"))
+
+
+class TestLoadSkill(unittest.TestCase):
+    
+    @patch("load_skill.make_request")
+    def test_search_skills(self, mock_make_request):
+        mock_make_request.return_value = {
+            "skills": [
+                {"id": "makefile-pattern", "name": "Makefile Pattern", "description": "Makefile guidelines"},
+                {"id": "docker-build", "name": "Docker Build", "description": "Docker container setup"}
+            ]
+        }
+        res = load_skill.search_skills("make")
+        self.assertEqual(len(res), 1)
+        self.assertEqual(res[0]["id"], "makefile-pattern")
+
+    @patch("load_skill.make_request")
+    def test_fetch_skill(self, mock_make_request):
+        mock_make_request.return_value = {
+            "id": "makefile-pattern",
+            "body": "# Makefile Pattern"
+        }
+        res = load_skill.fetch_skill("makefile-pattern")
+        self.assertEqual(res["body"], "# Makefile Pattern")
+
+
 if __name__ == "__main__":
     unittest.main()
