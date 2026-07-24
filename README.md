@@ -148,6 +148,7 @@ Use `nmem-distill-memory` for durable atomic knowledge, `nmem-save-thread` for t
 
 ## Links
 
+- [Architecture Deep Dive](./ARCHITECTURE.md)
 - [Documentation](https://mem.nowledge.co/docs/integrations/google-antigravity)
 - [Nowledge Mem](https://mem.nowledge.co)
 - [Discord](https://nowled.ge/discord)

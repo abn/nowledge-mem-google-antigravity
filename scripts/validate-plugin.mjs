@@ -79,6 +79,7 @@ async function main() {
     'skills/nmem-propose-skill/SKILL.md',
     'skills/nmem-load-skill/SKILL.md',
     'skills/nmem-load-skill/scripts/load_skill.py',
+    'ARCHITECTURE.md',
     'scripts/validate-plugin.mjs',
     'scripts/package-plugin.mjs',
     'tests/test_hooks.py',
