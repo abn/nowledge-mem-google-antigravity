@@ -237,14 +237,12 @@ To minimize user interruption (via terminal permission popups), optimize latency
 
 ## Status & Diagnostics
 
-To check the server connection, active workspace space, conversation thread sync state, and local offline queue, use the `/nmem-status` command (realized via the `nmem-status` skill). 
+## Dynamic Skill Discovery & On-Demand Loading (`/nmem-load-skill`)
 
-This skill prints a visually rich UI (using Markdown tables, status check alerts, and sync lists) summarizing the connection and thread synchronization details.
+When the user runs `/nmem-load-skill <query>` or when Antigravity discovers an unhandled domain task (e.g., Makefile optimizations, Fedora RPM packaging, Flatpak setups, database migrations) where a relevant skill exists on Nowledge Mem:
 
-If direct diagnostics are required or the setup seems completely broken, fall back to running the CLI tool:
-
-```bash
-nmem status
-```
+1. **Query & Preview**: Search the Nowledge Mem server using `skills/nmem-load-skill/scripts/load_skill.py search "<query>"`.
+2. **Present Choice**: Present matching skills via `ask_question` or present a `skill_load_plan.md` artifact.
+3. **Fetch & Inject**: Fetch the skill body (`load_skill.py fetch "<id>"`) and inject it into the active conversation turn (Ephemeral Mode) or install it to `.agents/skills/<name>/SKILL.md` (Persistent Mode).
 
 Be concise, use memory tools naturally, and avoid saving routine or low-value chatter.
