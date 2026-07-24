@@ -26,8 +26,10 @@ nmem_status = import_module_from_path("nmem_status", str(HOOKS_DIR / "nmem_statu
 
 class TestNmemShared(unittest.TestCase):
     
+    @patch("os.access", return_value=True)
+    @patch("pathlib.Path.is_file", return_value=True)
     @patch("shutil.which")
-    def test_nmem_command_resolution(self, mock_which):
+    def test_nmem_command_resolution(self, mock_which, mock_is_file, mock_access):
         # Case 1: nmem exists
         mock_which.side_effect = lambda x: "/usr/bin/nmem" if x == "nmem" else None
         self.assertEqual(nmem_shared._nmem_command(), "/usr/bin/nmem")
@@ -90,6 +92,22 @@ class TestNmemShared(unittest.TestCase):
         nmem_shared.save_unsynced_session("conv-1", [{"role": "user", "content": "hi"}], "title", "space", "host")
         mock_mkdir.assert_called_once()
         mock_write.assert_called_once()
+
+    @patch.dict(os.environ, {"NMEM_API_URL": "https://remote.example.com", "NMEM_API_KEY": "secret_key"})
+    def test_get_effective_config_env(self):
+        url, key = nmem_shared.get_effective_config()
+        self.assertEqual(url, "https://remote.example.com")
+        self.assertEqual(key, "secret_key")
+
+    @patch("urllib.request.urlopen")
+    def test_http_request_success(self, mock_urlopen):
+        mock_resp = MagicMock()
+        mock_resp.status = 200
+        mock_resp.read.return_value = b'{"status": "ok"}'
+        mock_urlopen.return_value.__enter__.return_value = mock_resp
+
+        res = nmem_shared.http_request("/health")
+        self.assertEqual(res, {"status": "ok"})
 
 
 class TestSessionStart(unittest.TestCase):
