@@ -88,7 +88,35 @@ def main():
                 elif len(clean_text) > 0:
                     title = clean_text
                     
-            # Check if the thread exists
+            # Try HTTP transport first
+            try:
+                space_param = f"?space={space}" if space else ""
+                check_res = nmem_shared.http_request(f"/threads/{conversation_id}{space_param}", method="GET", timeout=3.0)
+                if isinstance(check_res, dict) and (check_res.get("id") or check_res.get("thread_id") or "messages" in check_res):
+                    append_payload = {"messages": messages}
+                    if space:
+                        append_payload["space"] = space
+                    app_res = nmem_shared.http_request(f"/threads/{conversation_id}/append", method="POST", payload=append_payload, timeout=5.0)
+                    if isinstance(app_res, dict) and not app_res.get("error"):
+                        success = True
+                        break
+                elif isinstance(check_res, dict):
+                    import_payload = {
+                        "id": conversation_id,
+                        "title": title,
+                        "source": "google-antigravity",
+                        "messages": messages
+                    }
+                    if space:
+                        import_payload["space"] = space
+                    imp_res = nmem_shared.http_request("/threads/import", method="POST", payload=import_payload, timeout=5.0)
+                    if isinstance(imp_res, dict) and not imp_res.get("error"):
+                        success = True
+                        break
+            except Exception:
+                pass
+
+            # Check if the thread exists (CLI Fallback)
             check_args = ['t', 'show', conversation_id]
             if space:
                 check_args.extend(['--space', space])

@@ -10,6 +10,33 @@ sys.path.insert(0, str(Path(__file__).parent.resolve()))
 import nmem_shared
 
 def read_nmem(args, keys):
+    # Try direct HTTP first for context or wm commands
+    if 'context' in args:
+        endpoint = "/context?source_app=google-antigravity"
+        if '--space' in args:
+            idx = args.index('--space')
+            if idx + 1 < len(args):
+                endpoint += f"&space={args[idx+1]}"
+        res = nmem_shared.http_request(endpoint, method="GET", timeout=4.0)
+        if isinstance(res, dict):
+            for key in keys:
+                val = res.get(key)
+                if isinstance(val, str) and val.strip():
+                    return val.strip()
+
+    if 'wm' in args or 'working-memory' in args:
+        endpoint = "/working-memory"
+        if '--space' in args:
+            idx = args.index('--space')
+            if idx + 1 < len(args):
+                endpoint += f"?space={args[idx+1]}"
+        res = nmem_shared.http_request(endpoint, method="GET", timeout=4.0)
+        if isinstance(res, dict):
+            for key in keys:
+                val = res.get(key)
+                if isinstance(val, str) and val.strip():
+                    return val.strip()
+
     cmd_args = ['--json'] + args
     try:
         result = nmem_shared.run_nmem_command(
