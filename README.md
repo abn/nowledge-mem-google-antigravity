@@ -65,7 +65,7 @@ Release packaging notes live in [`RELEASING.md`](./RELEASING.md).
 
 **Automatic lifecycle hooks**
 
-- **PreInvocation Hook**: Automatically loads Context Bundle when available, with Working Memory as the lightweight fallback, and injects it as situational context at the start of the session. Prioritizes direct native HTTP REST transport (<30ms latency), falling back to CLI subprocess execution.
+- **PreInvocation Hook**: Automatically loads Context Bundle when available, with Working Memory as the lightweight fallback, and injects it as situational context at the start of the session. Prioritizes direct native HTTP REST transport (<30ms latency), falling back to CLI subprocess execution. Concurrently launches a non-blocking background thread to connect and sync active host skills (`nmem skills connect antigravity` and `nmem skills sync`).
 - **Stop Hook**: Automatically imports conversation messages from Antigravity's `transcript.jsonl` log into Nowledge Mem under the current conversation ID when execution completes. Prioritizes direct native HTTP REST transport, falling back to CLI execution and local offline buffer queuing (`~/.nowledge-mem/antigravity_unsynced.json`).
 
 **Bundled MCP**

@@ -104,6 +104,18 @@ class TestNmemShared(unittest.TestCase):
             if os.path.exists(tf_path):
                 os.unlink(tf_path)
 
+    @patch("nmem_shared._nmem_command")
+    @patch("nmem_shared.run_nmem_command")
+    def test_sync_host_skills_async(self, mock_run_cmd, mock_nmem_cmd):
+        mock_nmem_cmd.return_value = "/usr/bin/nmem"
+        import time
+        nmem_shared.sync_host_skills_async()
+        time.sleep(0.1)
+        self.assertTrue(mock_run_cmd.called)
+        calls = [c[0][0] for c in mock_run_cmd.call_args_list]
+        self.assertIn(["skills", "connect", "antigravity"], calls)
+        self.assertIn(["skills", "sync"], calls)
+
     @patch("nmem_shared.FileLock")
     @patch("pathlib.Path.exists")
     @patch("pathlib.Path.mkdir")

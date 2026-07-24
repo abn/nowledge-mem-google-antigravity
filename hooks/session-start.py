@@ -136,6 +136,12 @@ def main():
         except Exception:
             pass
 
+        # Asynchronously sync host skills connection (nmem skills connect antigravity / sync)
+        try:
+            nmem_shared.sync_host_skills_async()
+        except Exception:
+            pass
+
         hook_input = nmem_shared.read_hook_input()
         conversation_id = hook_input.get('conversationId')
         transcript_path = hook_input.get('transcriptPath')

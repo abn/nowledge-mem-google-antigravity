@@ -230,6 +230,29 @@ def sync_mcp_config_file(mcp_config_path: str = None) -> bool:
             sys.stderr.write(f"Warning: Failed to sync mcp_config.json: {e}\n")
         return False
 
+
+def sync_host_skills_async() -> None:
+    """Asynchronously runs 'nmem skills connect antigravity' and 'nmem skills sync'
+    in a non-blocking background thread to ensure active skills are connected and refreshed.
+    """
+    import threading
+
+    def _do_sync():
+        try:
+            cmd = _nmem_command()
+            if not cmd:
+                return
+            # Connect host agent 'antigravity'
+            run_nmem_command(["skills", "connect", "antigravity"], timeout=10)
+            # Sync remote skill changes
+            run_nmem_command(["skills", "sync"], timeout=10)
+        except Exception as e:
+            if os.environ.get("DEBUG") or os.environ.get("NMEM_DEBUG"):
+                sys.stderr.write(f"Background skills connect/sync failed: {e}\n")
+
+    t = threading.Thread(target=_do_sync, daemon=True)
+    t.start()
+
 def http_request(endpoint: str, method: str = "GET", payload: dict | None = None, timeout: float = 5.0) -> dict | None:
     """Make a direct HTTP request to the Nowledge Mem backend prior to CLI fallback."""
     import urllib.request
