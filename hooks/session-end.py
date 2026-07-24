@@ -93,7 +93,33 @@ def main():
                 space_param = f"?space={space}" if space else ""
                 check_res = nmem_shared.http_request(f"/threads/{conversation_id}{space_param}", method="GET", timeout=3.0)
                 if isinstance(check_res, dict) and (check_res.get("id") or check_res.get("thread_id") or "messages" in check_res):
-                    append_payload = {"messages": messages}
+                    existing_msgs = check_res.get("messages") or []
+                    matched_count = 0
+                    if isinstance(existing_msgs, list):
+                        for old_m, new_m in zip(existing_msgs, messages):
+                            old_role = old_m.get("role") or old_m.get("sender")
+                            new_role = new_m.get("role") or new_m.get("sender")
+                            old_text = old_m.get("content") or old_m.get("text")
+                            new_text = new_m.get("content") or new_m.get("text")
+                            if old_role == new_role and old_text == new_text:
+                                matched_count += 1
+                            else:
+                                break
+
+                    # Try reconcile-tail if there are matched leading messages
+                    if matched_count > 0:
+                        rec_payload = {
+                            "matched_count": matched_count,
+                            "messages": messages[matched_count:]
+                        }
+                        if space:
+                            rec_payload["space"] = space
+                        rec_res = nmem_shared.http_request(f"/threads/{conversation_id}/reconcile-tail", method="POST", payload=rec_payload, timeout=5.0)
+                        if isinstance(rec_res, dict) and not rec_res.get("error"):
+                            success = True
+                            break
+
+                    append_payload = {"messages": messages[matched_count:] if matched_count > 0 else messages}
                     if space:
                         append_payload["space"] = space
                     app_res = nmem_shared.http_request(f"/threads/{conversation_id}/append", method="POST", payload=append_payload, timeout=5.0)

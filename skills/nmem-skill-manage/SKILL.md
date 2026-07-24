@@ -41,7 +41,7 @@ Do not install skills silently. Use Antigravity's rich interaction interfaces to
   - Follow up with a second `ask_question` or option on whether to commit them to the repository or keep them local.
 - **Option B (Proceed Artifact)**: For larger installations, write a `skills_installation_plan.md` artifact under `<appDataDir>/brain/<conversation-id>`.
   - Set `RequestFeedback: true` and `UserFacing: true` in the `ArtifactMetadata` to present a "Proceed" button.
-  - Present the suggested skills in a markdown Table showing the Skill ID, Description, Relevance reasons, and git commit strategy (e.g., local git exclude vs. committed).
+  - Present the suggested skills in a markdown Table showing the Skill ID, Trust Badge (`Proven`, `Checked`, `Draft`), Description, Relevance reasons, and git commit strategy (e.g., local git exclude vs. committed).
   - The user can click "Proceed" to approve and install the plan in one click.
 
 ### Step 3: Install/Update the Skill

@@ -333,6 +333,7 @@ class TestSyncLearnings(unittest.TestCase):
 
 
 load_skill = import_module_from_path("load_skill", str(HOOKS_DIR.parent / "skills" / "nmem-skill-load" / "scripts" / "load_skill.py"))
+manage_skills = import_module_from_path("manage_skills", str(HOOKS_DIR.parent / "skills" / "nmem-skill-manage" / "scripts" / "manage_skills.py"))
 
 
 class TestLoadSkill(unittest.TestCase):
@@ -357,6 +358,16 @@ class TestLoadSkill(unittest.TestCase):
         }
         res = load_skill.fetch_skill("makefile-pattern")
         self.assertEqual(res["body"], "# Makefile Pattern")
+
+
+class TestManageSkills(unittest.TestCase):
+    
+    def test_compute_trust_badge(self):
+        self.assertEqual(manage_skills.compute_trust_badge({"trust_badge": "proven"}), "Proven")
+        self.assertEqual(manage_skills.compute_trust_badge({"passed_tests_count": 2}), "Proven")
+        self.assertEqual(manage_skills.compute_trust_badge({"passed_tests_count": 1}), "Checked")
+        self.assertEqual(manage_skills.compute_trust_badge({"stage": "active"}), "Checked")
+        self.assertEqual(manage_skills.compute_trust_badge({"stage": "candidate"}), "Draft")
 
 
 if __name__ == "__main__":

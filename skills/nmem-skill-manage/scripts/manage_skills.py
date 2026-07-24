@@ -102,6 +102,22 @@ def run_cli_show(skill_id):
     except Exception as e:
         raise Exception(f"CLI fallback failed: {e}")
 
+def compute_trust_badge(skill):
+    badge = skill.get('trust_badge') or skill.get('trust_state')
+    if badge:
+        return str(badge).capitalize()
+    passed_tests = skill.get('passed_tests_count') or skill.get('passed_tests') or 0
+    if isinstance(passed_tests, list):
+        passed_tests = len(passed_tests)
+    if passed_tests >= 2:
+        return "Proven"
+    elif passed_tests >= 1:
+        return "Checked"
+    stage = skill.get('stage', '')
+    if stage == 'active':
+        return "Checked"
+    return "Draft"
+
 def get_skills_list(config):
     # Fetch all skills from nmem
     try:
@@ -116,7 +132,11 @@ def get_skills_list(config):
             sys.exit(1)
     # Filter to only show active, candidate, and archived skills
     allowed_stages = {'active', 'candidate', 'archived'}
-    filtered = [s for s in skills if s.get('stage') in allowed_stages]
+    filtered = []
+    for s in skills:
+        if s.get('stage') in allowed_stages:
+            s['trust_badge'] = compute_trust_badge(s)
+            filtered.append(s)
     return filtered
 
 def list_command(config):
@@ -126,11 +146,12 @@ def list_command(config):
             print("No skills available to install.")
             return
         
-        print(f"{'ID':<20} | {'STAGE':<10} | {'TITLE'}")
+        print(f"{'ID':<20} | {'STAGE':<10} | {'TRUST':<8} | {'TITLE'}")
         print("-" * 80)
         for s in skills:
             title = s.get('title') or s.get('headline') or s.get('id')
-            print(f"{s['id']:<20} | {s['stage']:<10} | {title}")
+            badge = s.get('trust_badge', 'Draft')
+            print(f"{s['id']:<20} | {s['stage']:<10} | {badge:<8} | {title}")
     except Exception as e:
         sys.stderr.write(f"Error listing skills: {e}\n")
         sys.exit(1)
@@ -212,7 +233,8 @@ def suggest_command(config, workspace_root):
             s = sug['skill']
             title = s.get('title') or s.get('headline') or s.get('id')
             reason_str = ", ".join(sug['reasons'])
-            print(f"Skill: {title} ({s['id']}) [Stage: {s['stage']}]")
+            badge = s.get('trust_badge', 'Draft')
+            print(f"Skill: {title} ({s['id']}) [Stage: {s['stage']}] [Trust: {badge}]")
             print(f"  Reason: {reason_str}")
             print(f"  Description: {s.get('description') or s.get('pitch') or 'N/A'}")
             print()
