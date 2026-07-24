@@ -160,8 +160,88 @@ def _windows_no_window_kwargs() -> dict[str, int]:
         return {}
     return {"creationflags": getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)}
 
+def get_effective_config() -> tuple[str, str | None]:
+    """Resolve effective API URL and API key following the hierarchy:
+    1. NMEM_API_URL / NMEM_API_KEY environment variables
+    2. ~/.nowledge-mem/config.json
+    3. Fallback default http://127.0.0.1:14242
+    """
+    api_url = os.environ.get("NMEM_API_URL", "").strip()
+    api_key = os.environ.get("NMEM_API_KEY", "").strip() or None
+
+    if not api_url:
+        config_file = Path("~/.nowledge-mem/config.json").expanduser()
+        if config_file.is_file():
+            try:
+                data = json.loads(config_file.read_text(encoding="utf-8"))
+                api_url = data.get("apiUrl", "").strip()
+                if not api_key:
+                    api_key = data.get("apiKey", "").strip() or None
+            except Exception:
+                pass
+
+    if not api_url:
+        api_url = "http://127.0.0.1:14242"
+
+    return api_url.rstrip("/"), api_key
+
+def http_request(endpoint: str, method: str = "GET", payload: dict | None = None, timeout: float = 5.0) -> dict | None:
+    """Make a direct HTTP request to the Nowledge Mem backend prior to CLI fallback."""
+    import urllib.request
+    import urllib.error
+
+    api_url, api_key = get_effective_config()
+    url = f"{api_url}{endpoint}"
+
+    headers = {
+        "Content-Type": "application/json",
+        "APP": "Google Antigravity"
+    }
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+        headers["X-MEM-API-Key"] = api_key
+
+    data = json.dumps(payload).encode("utf-8") if payload is not None else None
+    req = urllib.request.Request(url, data=data, headers=headers, method=method)
+
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            if resp.status in (200, 201):
+                body = resp.read().decode("utf-8")
+                return json.loads(body) if body else {}
+    except Exception as e:
+        if os.environ.get("DEBUG") or os.environ.get("NMEM_DEBUG"):
+            sys.stderr.write(f"HTTP request to {url} failed: {e}\n")
+
+    return None
+
 def _nmem_command() -> str | None:
-    return shutil.which("nmem") or shutil.which("nmem.cmd")
+    candidate = shutil.which("nmem") or shutil.which("nmem.cmd")
+    if candidate:
+        try:
+            resolved = Path(candidate).resolve()
+            if resolved.is_file() and os.access(resolved, os.X_OK):
+                return str(resolved)
+        except Exception:
+            pass
+
+    # Fallback checking Linux system installation paths
+    linux_paths = [
+        "/usr/lib/nowledge-mem/nmem",
+        "/usr/lib64/nowledge-mem/nmem",
+        "/usr/local/bin/nmem",
+        "/usr/bin/nmem",
+        os.path.expanduser("~/.local/share/nowledge-mem/bin/nmem-wrapper"),
+    ]
+    for p_str in linux_paths:
+        try:
+            p = Path(p_str).resolve()
+            if p.is_file() and os.access(p, os.X_OK):
+                return str(p)
+        except Exception:
+            pass
+
+    return None
 
 def _cmd_exe_path(path: str) -> str:
     normalized = path.replace("\\", "/")
